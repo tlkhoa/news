@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+    <title th:text="${#strings.isEmpty(pageTitle) ? 'Đọc bài' : pageTitle}">Đọc bài</title>
+    <link th:rel="stylesheet" th:href="@{/css/style.css}"/>
+    <link href="https://fonts.googleapis.com/css2?family=Merriweather:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;600;700&display=swap" rel="stylesheet"/>
+    <script th:src="@{/js/app.js}" defer></script>
+</head>
+<body>
+<header class="site-header">
+    <div class="header-inner">
+        <a class="brand" th:href="@{/}">📰 <span>Vietnam News</span></a>
+        <div class="header-actions">
+            <a class="btn btn-outline" th:href="@{/admin}">Quản trị</a>
+        </div>
+    </div>
+</header>
+
+<main class="container">
+    <th:block th:replace="~{fragments :: messages}"></th:block>
+
+    <article class="detail">
+        <a class="detail-back" th:href="@{/news}">← Quay lại danh sách</a>
+
+        <h1 class="detail-title" th:text="${article.title}">Tiêu đề bài viết</h1>
+
+        <div class="detail-meta">
+            <div class="item"><span class="label">Nguồn</span> <span th:text="${article.sourceName}">—</span></div>
+            <div class="item" th:if="${article.categoryName}"><span class="label">Chuyên mục</span> <span th:text="${article.categoryName}">—</span></div>
+            <div class="item" th:if="${article.publishedAt != null}"><span class="label">Ngày đăng</span> <span th:text="${#temporals.format(article.publishedAt, 'HH:mm dd/MM/yyyy')}">—</span></div>
+            <div class="item" th:if="${article.collectedAt != null}"><span class="label">Lưu vào CSDL</span> <span th:text="${#temporals.format(article.collectedAt, 'dd/MM/yyyy HH:mm')}">—</span></div>
+            <div class="item" th:if="${article.viewCount != null}"><span class="label">Lượt xem</span> <span th:text="${article.viewCount}">—</span></div>
+            <div class="item" th:if="${article.popularityScore != null}"><span class="label">Điểm phổ biến</span> <span th:text="${article.popularityScore + ' điểm'}">—</span></div>
+        </div>
+
+        <img class="detail-image" th:src="${article.imageUrl}" th:alt="${article.title}"
+             th:if="${article.imageUrl}" onerror="this.remove()"/>
+
+        <div class="detail-content" th:if="${article.content != null}" th:utext="${article.content}">
+            <p>Nội dung bài viết sẽ hiển thị ở đây.</p>
+        </div>
+        <div th:if="${article.content == null}" class="empty">
+            <p>Chưa có nội dung toàn văn trong cơ sở dữ liệu.</p>
+            <form th:action="@{/news/{id}/fetch-content(id=${article.id})}" method="post">
+                <button class="btn btn-primary" type="submit">⬇️ Tải toàn văn từ website gốc</button>
+            </form>
+            <p class="small">Nội dung sẽ được lấy từ <span th:text="${article.url}">website gốc</span> và lưu lại để lần sau đọc nhanh hơn.</p>
+        </div>
+
+        <div class="detail-actions">
+            <a class="btn btn-primary" th:href="${article.url}" target="_blank" rel="noopener noreferrer">🔗 Mở website gốc</a>
+            <a class="btn btn-outline" th:href="@{/news}">← Danh sách tin</a>
+        </div>
+
+        <p class="small" style="margin-top:24px;color:var(--color-text-muted);border-top:1px solid var(--color-border);padding-top:12px;">
+            Nội dung được lấy từ cơ sở dữ liệu của ứng dụng desktop (.NET). Nếu toàn văn không hiển thị, hãy bấm "Mở website gốc".
+        </p>
+    </article>
+</main>
+
+<footer class="site-footer">
+    <div class="footer-inner">
+        <p>© <span th:text="${currentYear}">2026</span> Vietnam News Trend Analyzer — đọc tin theo ngày, dữ liệu PostgreSQL.</p>
+        <p class="small">Cùng cơ sở dữ liệu với ứng dụng desktop (.NET). Tối ưu hiển thị trên máy tính và điện thoại (Android/iOS).</p>
+    </div>
+</footer>
+</body>
+</html>

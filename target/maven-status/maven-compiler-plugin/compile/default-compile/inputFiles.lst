@@ -1,0 +1,17 @@
+E:\projects\me\dotnet\VietnamNewsTrendAnalyzer\posgresql\web\news\src\main\java\com\tdk\news\NewsApplication.java
+E:\projects\me\dotnet\VietnamNewsTrendAnalyzer\posgresql\web\news\src\main\java\com\tdk\news\repository\CategoryRepository.java
+E:\projects\me\dotnet\VietnamNewsTrendAnalyzer\posgresql\web\news\src\main\java\com\tdk\news\controller\GlobalData.java
+E:\projects\me\dotnet\VietnamNewsTrendAnalyzer\posgresql\web\news\src\main\java\com\tdk\news\model\NewsSource.java
+E:\projects\me\dotnet\VietnamNewsTrendAnalyzer\posgresql\web\news\src\main\java\com\tdk\news\repository\ArticleRepository.java
+E:\projects\me\dotnet\VietnamNewsTrendAnalyzer\posgresql\web\news\src\main\java\com\tdk\news\service\NewsClassifierService.java
+E:\projects\me\dotnet\VietnamNewsTrendAnalyzer\posgresql\web\news\src\main\java\com\tdk\news\service\PopularityScorerService.java
+E:\projects\me\dotnet\VietnamNewsTrendAnalyzer\posgresql\web\news\src\main\java\com\tdk\news\service\VietnameseTextUtils.java
+E:\projects\me\dotnet\VietnamNewsTrendAnalyzer\posgresql\web\news\src\main\java\com\tdk\news\model\ArticleSummary.java
+E:\projects\me\dotnet\VietnamNewsTrendAnalyzer\posgresql\web\news\src\main\java\com\tdk\news\service\RssCollectionService.java
+E:\projects\me\dotnet\VietnamNewsTrendAnalyzer\posgresql\web\news\src\main\java\com\tdk\news\controller\NewsController.java
+E:\projects\me\dotnet\VietnamNewsTrendAnalyzer\posgresql\web\news\src\main\java\com\tdk\news\model\NewsCategory.java
+E:\projects\me\dotnet\VietnamNewsTrendAnalyzer\posgresql\web\news\src\main\java\com\tdk\news\model\NewsArticle.java
+E:\projects\me\dotnet\VietnamNewsTrendAnalyzer\posgresql\web\news\src\main\java\com\tdk\news\repository\SourceRepository.java
+E:\projects\me\dotnet\VietnamNewsTrendAnalyzer\posgresql\web\news\src\main\java\com\tdk\news\service\ContentFetchService.java
+E:\projects\me\dotnet\VietnamNewsTrendAnalyzer\posgresql\web\news\src\main\java\com\tdk\news\controller\AdminController.java
+E:\projects\me\dotnet\VietnamNewsTrendAnalyzer\posgresql\web\news\src\main\java\com\tdk\news\service\ArticleContentExtractor.java
