@@ -89,8 +89,15 @@ public class NewsController {
             String fetched = contentFetchService.fetchContent(id);
             if (fetched != null && !fetched.isBlank()) {
                 article.setContent(fetched);
+                content = fetched;
             }
         }
+
+        // Chuẩn hóa nội dung hiển thị: xoá đoạn quảng cáo/kết bài (từ ảnh mediacdn.vn
+        // đầu tiên đến hết một trong các câu kết "Chúc bạn đọc báo vui vẻ!" /
+        // "trên Google tìm kiếm. Xem hướng dẫn") nếu có, áp dụng cả nội dung đã lưu sẵn trong DB.
+        content = contentFetchService.cleanForDisplay(content);
+        article.setContent(content);
 
         model.addAttribute("pageTitle", article.getTitle());
         model.addAttribute("article", article);

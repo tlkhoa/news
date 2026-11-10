@@ -53,6 +53,18 @@ public class ContentFetchService {
         "<body[\\s\\S]*?</body>", Pattern.CASE_INSENSITIVE);
     private static final Pattern WHITESPACE_PATTERN = Pattern.compile("\\s+");
 
+    // Đoạn quảng cáo/kết bài hay gặp trên một số báo (VietnamNet dùng CDN mediacdn.vn):
+    // từ thẻ <img> đầu tiên có src chứa mediacdn.vn đến hết câu "Chúc bạn đọc báo vui vẻ!".
+    private static final Pattern IMG_TRAILER_PATTERN = Pattern.compile(
+        "<img\\b[^>]*?\\bsrc=[\"']([^\"']*mediacdn\\.vn[^\"']*)[\"'][^>]*>",
+        Pattern.CASE_INSENSITIVE);
+    private static final List<Pattern> END_MARKER_PATTERNS = List.of(
+        Pattern.compile(Pattern.quote("Chúc bạn đọc báo vui vẻ!"), Pattern.CASE_INSENSITIVE)
+    );
+    private static final List<Pattern> END_MARKER_PATTERNS1 = List.of(
+            Pattern.compile(Pattern.quote("trên Google tìm kiếm. Xem hướng dẫn"), Pattern.CASE_INSENSITIVE)
+    );
+
     // Từ khóa class/id đánh dấu các khối KHÔNG phải nội dung bài (liên quan, quảng cáo, bình luận, sidebar...).
     private static final String[] NON_CONTENT_KEYWORDS = {
         "related", "side-bar", "sidebar", "widget", "advertisement", "ad-",
@@ -90,7 +102,7 @@ public class ContentFetchService {
 
         if (content != null && !content.isBlank() && fetchedAt != null) {
             // Đã có nội dung trong DB → trả về luôn, không gọi mạng.
-            return content;
+            return cleanForDisplay(content);
         }
 
         String url = article.getUrl();
@@ -111,6 +123,8 @@ public class ContentFetchService {
 
             // Chỉ giữ ảnh cùng domain với trang gốc, loại bỏ ảnh quảng cáo/tracking từ domain khác.
             extracted = filterExternalImages(extracted, url);
+            // Xoá đoạn quảng cáo/kết bài (từ ảnh mediacdn.vn đầu tiên đến câu chúc kết) trước khi lưu/hiển thị.
+            extracted = cleanForDisplay(extracted);
 
             // Lưu vào DB để lần sau không cần fetch lại.
             articleRepository.updateContent(id, extracted, LocalDateTime.now());
@@ -296,6 +310,41 @@ public class ContentFetchService {
         }
         result.append(html, lastEnd, html.length());
         return result.toString();
+    }
+
+    /**
+     * Làm sạch nội dung trước khi hiển thị: xoá đoạn quảng cáo/kết bài hay gặp
+     * trên một số báo — từ thẻ img đầu tiên có src chứa mediacdn.vn đến hết một
+     * trong các câu kết: "Chúc bạn đọc báo vui vẻ!" hoặc "trên Google tìm kiếm. Xem hướng dẫn".
+     * Trả về nguyên chuỗi nếu không tìm thấy đoạn cần xoá.
+     */
+    public String cleanForDisplay(String html) {
+        String str1= removeMediacdnTrailer(html, END_MARKER_PATTERNS);
+        str1= removeMediacdnTrailer(str1, END_MARKER_PATTERNS1);
+        return str1;
+    }
+
+    private static String removeMediacdnTrailer(String html, List<Pattern> endMarkers) {
+        if (html == null || html.isBlank()) {
+            return html;
+        }
+        Matcher img = IMG_TRAILER_PATTERN.matcher(html);
+        if (!img.find()) {
+            return html;
+        }
+        int start = img.start();
+        int endPos = -1;
+        for (Pattern p : endMarkers) {
+            Matcher m = p.matcher(html);
+            m.region(start, html.length());
+            if (m.find() && (endPos == -1 || m.end() < endPos)) {
+                endPos = m.end();
+            }
+        }
+        if (endPos == -1) {
+            return html;
+        }
+        return html.substring(0, start) + html.substring(endPos);
     }
 
     /* ---------- Kết quả ---------- */
