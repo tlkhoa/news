@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<head>
+    <title>Fragments</title>
+</head>
+<body>
+<th:block th:fragment="messages">
+    <div class="alert alert-success" th:if="${message}" th:text="${message}"></div>
+    <div class="alert alert-error" th:if="${error}" th:text="${error}"></div>
+</th:block>
+
+<th:block th:fragment="header">
+    <header class="site-header">
+        <div class="header-inner">
+            <a class="brand" th:href="@{/}">📰 <span>Vietnam News</span></a>
+            <div class="header-actions">
+                <a class="btn btn-outline" th:href="@{/admin}">Quản trị</a>
+            </div>
+        </div>
+    </header>
+</th:block>
+
+<th:block th:fragment="footer">
+    <footer class="site-footer">
+        <div class="footer-inner">
+            <p>© <span th:text="${currentYear}">2026</span> Vietnam News Trend Analyzer — đọc tin theo ngày, dữ liệu PostgreSQL.</p>
+            <p class="small">Cùng cơ sở dữ liệu với ứng dụng desktop (.NET). Tối ưu hiển thị trên máy tính và điện thoại (Android/iOS).</p>
+        </div>
+    </footer>
+</th:block>
+</body>
+</html>

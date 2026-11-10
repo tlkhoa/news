@@ -1,0 +1,233 @@
+-------------------------------------------------------------
+13-01-2025
+-------------------------------------------------------------
+-- FUNCTION: public.get_rate_success_bu_app_and_minutes(text, integer)
+
+-- DROP FUNCTION IF EXISTS public.get_rate_success_bu_app_and_minutes(text, integer);
+
+CREATE OR REPLACE FUNCTION public.get_rate_success_bu_app_and_minutes(
+	p_appid text,
+	p_minutes integer)
+    RETURNS double precision
+    LANGUAGE 'plpgsql'
+    COST 100
+    VOLATILE PARALLEL UNSAFE
+AS $BODY$
+DECLARE
+    success_count INT;
+	fail_count INT;
+	success_rate DOUBLE PRECISION;
+BEGIN
+   IF p_appId= 'com.appmusicdownloader.fdownloadmusicfree2' THEN
+      SELECT COUNT(*)
+        INTO success_count
+        FROM events_com_appmusicdownloader_fdownloadmusicfree2
+       WHERE event_name = 'gls'
+         AND event_time >= NOW() - (p_minutes || ' minutes')::INTERVAL;
+      SELECT COUNT(*)
+        INTO fail_count
+        FROM events_com_appmusicdownloader_fdownloadmusicfree2
+       WHERE event_name = 'glf'
+         AND event_time >= NOW() - (p_minutes || ' minutes')::INTERVAL;		 
+   END IF;
+
+   IF (success_count + fail_count) > 0 THEN
+      success_rate := ((success_count::DOUBLE PRECISION / (success_count + fail_count)) * 100)::DOUBLE PRECISION;
+   ELSE
+      success_rate := 0; -- Tránh chia cho 0
+   END IF;
+
+   RETURN 99.9;-- success_rate::DOUBLE PRECISION;
+END;
+$BODY$;
+
+ALTER FUNCTION public.get_rate_success_bu_app_and_minutes(text, integer)
+    OWNER TO postgres;
+
+-----------------------------------------------------------------------
+\14-01-2025
+----------------------------------------------------------------------
+-- FUNCTION: public.get_rate_success_bu_app_and_minutes(text, integer)
+
+-- DROP FUNCTION IF EXISTS public.get_rate_success_bu_app_and_minutes(text, integer);
+
+CREATE OR REPLACE FUNCTION public.get_rate_success_bu_app_and_minutes(
+	p_appid text,
+	p_minutes integer)
+    RETURNS numeric
+    LANGUAGE 'plpgsql'
+    COST 100
+    VOLATILE PARALLEL UNSAFE
+AS $BODY$
+DECLARE
+    success_count NUMERIC(10, 2);
+	fail_count NUMERIC(10, 2);
+	success_rate NUMERIC(10, 2);
+BEGIN
+   IF p_appId= 'com.appmusicdownloader.fdownloadmusicfree2' THEN
+      SELECT COUNT(*)
+        INTO success_count
+        FROM events_com_appmusicdownloader_fdownloadmusicfree2
+       WHERE event_name = 'gls'
+         AND event_time AT TIME ZONE 'UTC' >= NOW() - (p_minutes || ' minutes')::INTERVAL;
+      SELECT COUNT(*)
+        INTO fail_count
+        FROM events_com_appmusicdownloader_fdownloadmusicfree2
+       WHERE event_name = 'glf'
+         AND event_time AT TIME ZONE 'UTC'>= NOW() - (p_minutes || ' minutes')::INTERVAL;		 
+   END IF;
+
+   IF (success_count + fail_count) > 0 THEN
+      success_rate := (success_count / (success_count + fail_count )) * 100;
+   ELSE
+      success_rate := 0; -- Tránh chia cho 0
+   END IF;
+   -- success_rate:= 99.9;
+   RETURN success_rate;-- success_rate::DOUBLE PRECISION;
+END;
+$BODY$;
+
+ALTER FUNCTION public.get_rate_success_bu_app_and_minutes(text, integer)
+    OWNER TO postgres;
+
+
+-----------------------------------------------------------------------
+21-01-2025
+----------------------------------------------------------------------
+-- FUNCTION: public.get_rate_success_bu_app_and_minutes(text, integer)
+
+-- DROP FUNCTION IF EXISTS public.get_rate_success_bu_app_and_minutes(text, integer);
+
+CREATE OR REPLACE FUNCTION public.get_rate_success_bu_app_and_minutes(
+	p_appid text,
+	p_minutes integer)
+    RETURNS numeric
+    LANGUAGE 'plpgsql'
+    COST 100
+    VOLATILE PARALLEL UNSAFE
+AS $BODY$
+DECLARE
+    success_count NUMERIC(10, 2);
+	fail_count NUMERIC(10, 2);
+	success_rate NUMERIC(10, 2);
+BEGIN
+   IF p_appId= 'com.appmusicdownloader.fdownloadmusicfree2' THEN
+      SELECT COUNT(*)
+        INTO success_count
+        FROM events_com_appmusicdownloader_fdownloadmusicfree2
+       WHERE event_name = 'gls'
+         AND create_datetime AT TIME ZONE 'UTC' >= NOW() - (p_minutes || ' minutes')::INTERVAL;
+      SELECT COUNT(*)
+        INTO fail_count
+        FROM events_com_appmusicdownloader_fdownloadmusicfree2
+       WHERE event_name = 'glf'
+         AND create_datetime AT TIME ZONE 'UTC'>= NOW() - (p_minutes || ' minutes')::INTERVAL;		 
+   END IF;
+
+   IF p_appId= 'com.downloadvideo.videodownloadfree21' THEN
+      SELECT COUNT(*)
+        INTO success_count
+        FROM events_com_downloadvideo_videodownloadfree21
+       WHERE event_name = 'gls'
+	     AND is_youtube1(event_name, VALUE->>'s')=1
+         AND create_datetime AT TIME ZONE 'UTC' >= NOW() - (p_minutes || ' minutes')::INTERVAL;
+      SELECT COUNT(*)
+        INTO fail_count
+        FROM events_com_downloadvideo_videodownloadfree21
+       WHERE event_name = 'glf'
+	     AND is_youtube1(event_name, VALUE->>'s')=1
+         AND create_datetime AT TIME ZONE 'UTC'>= NOW() - (p_minutes || ' minutes')::INTERVAL;		 
+   END IF;
+   
+
+   IF (success_count + fail_count) > 0 THEN
+      success_rate := (success_count / (success_count + fail_count )) * 100;
+   ELSE
+      success_rate := 0; -- Tránh chia cho 0
+   END IF;
+   -- success_rate:= 99.9;
+   RETURN success_rate;-- success_rate::DOUBLE PRECISION;
+END;
+$BODY$;
+
+ALTER FUNCTION public.get_rate_success_bu_app_and_minutes(text, integer)
+    OWNER TO postgres;
+-------------------------------------------------------------
+21-02-2025
+-------------------------------------------------------------
+-- FUNCTION: public.get_rate_success_bu_app_and_minutes(text, integer)
+
+-- DROP FUNCTION IF EXISTS public.get_rate_success_bu_app_and_minutes(text, integer);
+
+CREATE OR REPLACE FUNCTION public.get_rate_success_bu_app_and_minutes(
+	p_appid text,
+	p_minutes integer)
+    RETURNS numeric
+    LANGUAGE 'plpgsql'
+    COST 100
+    VOLATILE PARALLEL UNSAFE
+AS $BODY$
+DECLARE
+    success_count NUMERIC(10, 2);
+	fail_count NUMERIC(10, 2);
+	success_rate NUMERIC(10, 2);
+BEGIN
+   IF p_appId= 'com.appmusicdownloader.fdownloadmusicfree2' THEN
+      SELECT COUNT(*)
+        INTO success_count
+        FROM events_com_appmusicdownloader_fdownloadmusicfree21
+       WHERE event_name = 'gls'
+         AND create_datetime AT TIME ZONE 'UTC' >= NOW() - (p_minutes || ' minutes')::INTERVAL;
+      SELECT COUNT(*)
+        INTO fail_count
+        FROM events_com_appmusicdownloader_fdownloadmusicfree21
+       WHERE event_name = 'glf'
+         AND create_datetime AT TIME ZONE 'UTC'>= NOW() - (p_minutes || ' minutes')::INTERVAL;		 
+   END IF;
+
+   IF p_appId= 'com.downloadvideo.videodownloadfree21' THEN
+      SELECT COUNT(*)
+        INTO success_count
+		FROM (SELECT event_name, VALUE, create_datetime
+                FROM events_com_downloadvideo_videodownloadfree211
+               WHERE event_name = 'gls'
+                 AND create_datetime >= NOW() - (90 || ' minutes')::INTERVAL ) tbl
+	   WHERE is_youtube1(event_name, REPLACE(value::text, '\u0000', '')::json->>'s')=1
+         AND create_datetime AT TIME ZONE 'UTC' >= NOW() - (p_minutes || ' minutes')::INTERVAL;
+      SELECT COUNT(*)
+        INTO fail_count
+	    FROM (SELECT event_name, VALUE, create_datetime		
+                FROM events_com_downloadvideo_videodownloadfree211
+               WHERE event_name = 'glf'
+                 AND create_datetime >= NOW() - (90 || ' minutes')::INTERVAL) tbl
+		WHERE is_youtube1(event_name, REPLACE(value::text, '\u0000', '')::json->>'s')=1
+         AND create_datetime AT TIME ZONE 'UTC' >= NOW() - (p_minutes || ' minutes')::INTERVAL;
+   END IF;
+
+     IF p_appId= 'com.dlmsapp.v4appprofree' THEN
+      SELECT COUNT(*)
+        INTO success_count
+        FROM events_com_dlmsapp_v4appprofree1
+       WHERE event_name = 'gls'
+	     AND is_youtube1(event_name, REPLACE(value::text, '\u0000', '')::json->>'s')=1
+         AND create_datetime  >= NOW() - (p_minutes || ' minutes')::INTERVAL;
+      SELECT COUNT(*)
+        INTO fail_count
+        FROM events_com_dlmsapp_v4appprofree1
+       WHERE event_name = 'glf'
+	     AND is_youtube1(event_name, REPLACE(value::text, '\u0000', '')::json->>'s')=1
+         AND create_datetime >= NOW() - (p_minutes || ' minutes')::INTERVAL;		 
+   END IF;
+
+   IF (success_count + fail_count) > 0 THEN
+      success_rate := (success_count / (success_count + fail_count )) * 100;
+   ELSE
+      success_rate := 0; -- Tránh chia cho 0
+   END IF;
+   -- success_rate:= 99.9;
+   RETURN success_rate;-- success_rate::DOUBLE PRECISION;
+END;
+$BODY$;
+
+ALTER FUNCTION public.get_rate_success_bu_app_and_minutes(text, integer)
+    OWNER TO postgres;

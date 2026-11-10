@@ -1,0 +1,495 @@
+2023-08-19 20:21:13.147  INFO 5732 --- [restartedMain] .s.SpringBootPushNotificationApplication : Starting SpringBootPushNotificationApplication on LAPTOP-V9O67UUN with PID 5732 (E:\projects\me\springboot\springboot-docker-demo\target\classes started by PC in E:\projects\me\springboot\springboot-docker-demo)
+2023-08-19 20:21:13.152  INFO 5732 --- [restartedMain] .s.SpringBootPushNotificationApplication : No active profile set, falling back to default profiles: default
+2023-08-19 20:21:13.192  INFO 5732 --- [restartedMain] o.s.b.devtools.restart.ChangeableUrls    : The Class-Path manifest attribute in C:\Users\PC\.m2\repository\io\grpc\grpc-netty-shaded\1.13.1\grpc-netty-shaded-1.13.1.jar referenced one or more files that do not exist: file:/C:/Users/PC/.m2/repository/io/grpc/grpc-netty-shaded/1.13.1/grpc-core-1.13.1.jar,file:/C:/Users/PC/.m2/repository/io/grpc/grpc-netty-shaded/1.13.1/grpc-context-1.13.1.jar,file:/C:/Users/PC/.m2/repository/io/grpc/grpc-netty-shaded/1.13.1/gson-2.7.jar,file:/C:/Users/PC/.m2/repository/io/grpc/grpc-netty-shaded/1.13.1/guava-20.0.jar,file:/C:/Users/PC/.m2/repository/io/grpc/grpc-netty-shaded/1.13.1/error_prone_annotations-2.1.2.jar,file:/C:/Users/PC/.m2/repository/io/grpc/grpc-netty-shaded/1.13.1/jsr305-3.0.0.jar,file:/C:/Users/PC/.m2/repository/io/grpc/grpc-netty-shaded/1.13.1/opencensus-contrib-grpc-metrics-0.12.3.jar,file:/C:/Users/PC/.m2/repository/io/grpc/grpc-netty-shaded/1.13.1/opencensus-api-0.12.3.jar
+2023-08-19 20:21:13.201  INFO 5732 --- [restartedMain] .e.DevToolsPropertyDefaultsPostProcessor : Devtools property defaults active! Set 'spring.devtools.add-properties' to 'false' to disable
+2023-08-19 20:21:13.202  INFO 5732 --- [restartedMain] .e.DevToolsPropertyDefaultsPostProcessor : For additional web related logging consider setting the 'logging.level.web' property to 'DEBUG'
+2023-08-19 20:21:13.832  INFO 5732 --- [restartedMain] faultConfiguringBeanFactoryPostProcessor : No bean named 'errorChannel' has been explicitly defined. Therefore, a default PublishSubscribeChannel will be created.
+2023-08-19 20:21:13.841  INFO 5732 --- [restartedMain] faultConfiguringBeanFactoryPostProcessor : No bean named 'integrationHeaderChannelRegistry' has been explicitly defined. Therefore, a default DefaultHeaderChannelRegistry will be created.
+2023-08-19 20:21:13.870  INFO 5732 --- [restartedMain] trationDelegate$BeanPostProcessorChecker : Bean 'org.springframework.integration.config.IntegrationManagementConfiguration' of type [org.springframework.integration.config.IntegrationManagementConfiguration] is not eligible for getting processed by all BeanPostProcessors (for example: not eligible for auto-proxying)
+2023-08-19 20:21:13.882  INFO 5732 --- [restartedMain] trationDelegate$BeanPostProcessorChecker : Bean 'integrationChannelResolver' of type [org.springframework.integration.support.channel.BeanFactoryChannelResolver] is not eligible for getting processed by all BeanPostProcessors (for example: not eligible for auto-proxying)
+2023-08-19 20:21:13.883  INFO 5732 --- [restartedMain] trationDelegate$BeanPostProcessorChecker : Bean 'integrationDisposableAutoCreatedBeans' of type [org.springframework.integration.config.annotation.Disposables] is not eligible for getting processed by all BeanPostProcessors (for example: not eligible for auto-proxying)
+2023-08-19 20:21:14.306  INFO 5732 --- [restartedMain] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port(s): 8182 (http)
+2023-08-19 20:21:14.315  INFO 5732 --- [restartedMain] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2023-08-19 20:21:14.315  INFO 5732 --- [restartedMain] org.apache.catalina.core.StandardEngine  : Starting Servlet engine: [Apache Tomcat/9.0.36]
+2023-08-19 20:21:14.404  INFO 5732 --- [restartedMain] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+2023-08-19 20:21:14.404  INFO 5732 --- [restartedMain] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 1202 ms
+2023-08-19 20:21:14.740  INFO 5732 --- [restartedMain] o.s.s.concurrent.ThreadPoolTaskExecutor  : Initializing ExecutorService 'applicationTaskExecutor'
+2023-08-19 20:21:14.899  INFO 5732 --- [restartedMain] o.s.s.c.ThreadPoolTaskScheduler          : Initializing ExecutorService 'taskScheduler'
+2023-08-19 20:21:14.918  INFO 5732 --- [restartedMain] o.s.b.d.a.OptionalLiveReloadServer       : LiveReload server is running on port 35729
+2023-08-19 20:21:15.002  INFO 5732 --- [restartedMain] o.s.i.endpoint.EventDrivenConsumer       : Adding {logging-channel-adapter:_org.springframework.integration.errorLogger} as a subscriber to the 'errorChannel' channel
+2023-08-19 20:21:15.002  INFO 5732 --- [restartedMain] o.s.i.channel.PublishSubscribeChannel    : Channel 'application.errorChannel' has 1 subscriber(s).
+2023-08-19 20:21:15.002  INFO 5732 --- [restartedMain] o.s.i.endpoint.EventDrivenConsumer       : started bean '_org.springframework.integration.errorLogger'
+2023-08-19 20:21:15.052  INFO 5732 --- [restartedMain] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port(s): 8182 (http) with context path ''
+2023-08-19 20:21:15.061  INFO 5732 --- [scheduling-1] c.b.s.ScheduledTasks                     : Cron Task :: Execution Time - 20:21:15
+2023-08-19 20:21:15.063  INFO 5732 --- [restartedMain] .s.SpringBootPushNotificationApplication : Started SpringBootPushNotificationApplication in 2.26 seconds (JVM running for 2.819)
+2023-08-19 20:21:19.385  INFO 5732 --- [SpringContextShutdownHook] o.s.i.endpoint.EventDrivenConsumer       : Removing {logging-channel-adapter:_org.springframework.integration.errorLogger} as a subscriber to the 'errorChannel' channel
+2023-08-19 20:21:19.385  INFO 5732 --- [SpringContextShutdownHook] o.s.i.channel.PublishSubscribeChannel    : Channel 'application.errorChannel' has 0 subscriber(s).
+2023-08-19 20:21:19.385  INFO 5732 --- [SpringContextShutdownHook] o.s.i.endpoint.EventDrivenConsumer       : stopped bean '_org.springframework.integration.errorLogger'
+2023-08-19 20:21:19.386  INFO 5732 --- [SpringContextShutdownHook] o.s.s.c.ThreadPoolTaskScheduler          : Shutting down ExecutorService 'taskScheduler'
+2023-08-19 20:21:19.386  INFO 5732 --- [SpringContextShutdownHook] o.s.s.concurrent.ThreadPoolTaskExecutor  : Shutting down ExecutorService 'applicationTaskExecutor'
+2023-08-19 20:22:44.985  INFO 21548 --- [restartedMain] .s.SpringBootPushNotificationApplication : Starting SpringBootPushNotificationApplication on LAPTOP-V9O67UUN with PID 21548 (E:\projects\me\springboot\springboot-docker-demo\target\classes started by PC in E:\projects\me\springboot\springboot-docker-demo)
+2023-08-19 20:22:44.987  INFO 21548 --- [restartedMain] .s.SpringBootPushNotificationApplication : No active profile set, falling back to default profiles: default
+2023-08-19 20:22:45.023  INFO 21548 --- [restartedMain] o.s.b.devtools.restart.ChangeableUrls    : The Class-Path manifest attribute in C:\Users\PC\.m2\repository\io\grpc\grpc-netty-shaded\1.13.1\grpc-netty-shaded-1.13.1.jar referenced one or more files that do not exist: file:/C:/Users/PC/.m2/repository/io/grpc/grpc-netty-shaded/1.13.1/grpc-core-1.13.1.jar,file:/C:/Users/PC/.m2/repository/io/grpc/grpc-netty-shaded/1.13.1/grpc-context-1.13.1.jar,file:/C:/Users/PC/.m2/repository/io/grpc/grpc-netty-shaded/1.13.1/gson-2.7.jar,file:/C:/Users/PC/.m2/repository/io/grpc/grpc-netty-shaded/1.13.1/guava-20.0.jar,file:/C:/Users/PC/.m2/repository/io/grpc/grpc-netty-shaded/1.13.1/error_prone_annotations-2.1.2.jar,file:/C:/Users/PC/.m2/repository/io/grpc/grpc-netty-shaded/1.13.1/jsr305-3.0.0.jar,file:/C:/Users/PC/.m2/repository/io/grpc/grpc-netty-shaded/1.13.1/opencensus-contrib-grpc-metrics-0.12.3.jar,file:/C:/Users/PC/.m2/repository/io/grpc/grpc-netty-shaded/1.13.1/opencensus-api-0.12.3.jar
+2023-08-19 20:22:45.023  INFO 21548 --- [restartedMain] .e.DevToolsPropertyDefaultsPostProcessor : Devtools property defaults active! Set 'spring.devtools.add-properties' to 'false' to disable
+2023-08-19 20:22:45.024  INFO 21548 --- [restartedMain] .e.DevToolsPropertyDefaultsPostProcessor : For additional web related logging consider setting the 'logging.level.web' property to 'DEBUG'
+2023-08-19 20:22:45.644  INFO 21548 --- [restartedMain] faultConfiguringBeanFactoryPostProcessor : No bean named 'errorChannel' has been explicitly defined. Therefore, a default PublishSubscribeChannel will be created.
+2023-08-19 20:22:45.651  INFO 21548 --- [restartedMain] faultConfiguringBeanFactoryPostProcessor : No bean named 'integrationHeaderChannelRegistry' has been explicitly defined. Therefore, a default DefaultHeaderChannelRegistry will be created.
+2023-08-19 20:22:45.679  INFO 21548 --- [restartedMain] trationDelegate$BeanPostProcessorChecker : Bean 'org.springframework.integration.config.IntegrationManagementConfiguration' of type [org.springframework.integration.config.IntegrationManagementConfiguration] is not eligible for getting processed by all BeanPostProcessors (for example: not eligible for auto-proxying)
+2023-08-19 20:22:45.687  INFO 21548 --- [restartedMain] trationDelegate$BeanPostProcessorChecker : Bean 'integrationChannelResolver' of type [org.springframework.integration.support.channel.BeanFactoryChannelResolver] is not eligible for getting processed by all BeanPostProcessors (for example: not eligible for auto-proxying)
+2023-08-19 20:22:45.688  INFO 21548 --- [restartedMain] trationDelegate$BeanPostProcessorChecker : Bean 'integrationDisposableAutoCreatedBeans' of type [org.springframework.integration.config.annotation.Disposables] is not eligible for getting processed by all BeanPostProcessors (for example: not eligible for auto-proxying)
+2023-08-19 20:22:46.043  INFO 21548 --- [restartedMain] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port(s): 8182 (http)
+2023-08-19 20:22:46.053  INFO 21548 --- [restartedMain] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2023-08-19 20:22:46.054  INFO 21548 --- [restartedMain] org.apache.catalina.core.StandardEngine  : Starting Servlet engine: [Apache Tomcat/9.0.36]
+2023-08-19 20:22:46.167  INFO 21548 --- [restartedMain] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+2023-08-19 20:22:46.168  INFO 21548 --- [restartedMain] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 1144 ms
+2023-08-19 20:22:46.488  INFO 21548 --- [restartedMain] o.s.s.concurrent.ThreadPoolTaskExecutor  : Initializing ExecutorService 'applicationTaskExecutor'
+2023-08-19 20:22:46.656  INFO 21548 --- [restartedMain] o.s.s.c.ThreadPoolTaskScheduler          : Initializing ExecutorService 'taskScheduler'
+2023-08-19 20:22:46.678  INFO 21548 --- [restartedMain] o.s.b.d.a.OptionalLiveReloadServer       : LiveReload server is running on port 35729
+2023-08-19 20:22:46.758  INFO 21548 --- [restartedMain] o.s.i.endpoint.EventDrivenConsumer       : Adding {logging-channel-adapter:_org.springframework.integration.errorLogger} as a subscriber to the 'errorChannel' channel
+2023-08-19 20:22:46.759  INFO 21548 --- [restartedMain] o.s.i.channel.PublishSubscribeChannel    : Channel 'application.errorChannel' has 1 subscriber(s).
+2023-08-19 20:22:46.759  INFO 21548 --- [restartedMain] o.s.i.endpoint.EventDrivenConsumer       : started bean '_org.springframework.integration.errorLogger'
+2023-08-19 20:22:46.791  INFO 21548 --- [restartedMain] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port(s): 8182 (http) with context path ''
+2023-08-19 20:22:46.800  INFO 21548 --- [restartedMain] .s.SpringBootPushNotificationApplication : Started SpringBootPushNotificationApplication in 2.146 seconds (JVM running for 2.604)
+2023-08-19 20:22:46.800  INFO 21548 --- [scheduling-1] c.b.s.ScheduledTasks                     : Cron Task :: Execution Time - 20:22:46
+2023-08-19 20:22:53.010  INFO 21548 --- [http-nio-8182-exec-1] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring DispatcherServlet 'dispatcherServlet'
+2023-08-19 20:22:53.010  INFO 21548 --- [http-nio-8182-exec-1] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
+2023-08-19 20:22:53.020  INFO 21548 --- [http-nio-8182-exec-1] o.s.web.servlet.DispatcherServlet        : Completed initialization in 9 ms
+2023-08-19 20:23:59.370  WARN 21548 --- [http-nio-8182-exec-5] .w.s.m.s.DefaultHandlerExceptionResolver : Resolved [org.springframework.web.HttpRequestMethodNotSupportedException: Request method 'GET' not supported]
+2023-08-19 20:24:31.066  INFO 21548 --- [SpringContextShutdownHook] o.s.i.endpoint.EventDrivenConsumer       : Removing {logging-channel-adapter:_org.springframework.integration.errorLogger} as a subscriber to the 'errorChannel' channel
+2023-08-19 20:24:31.066  INFO 21548 --- [SpringContextShutdownHook] o.s.i.channel.PublishSubscribeChannel    : Channel 'application.errorChannel' has 0 subscriber(s).
+2023-08-19 20:24:31.066  INFO 21548 --- [SpringContextShutdownHook] o.s.i.endpoint.EventDrivenConsumer       : stopped bean '_org.springframework.integration.errorLogger'
+2023-08-19 20:24:31.066  INFO 21548 --- [SpringContextShutdownHook] o.s.s.c.ThreadPoolTaskScheduler          : Shutting down ExecutorService 'taskScheduler'
+2023-08-19 20:24:31.066  INFO 21548 --- [SpringContextShutdownHook] o.s.s.concurrent.ThreadPoolTaskExecutor  : Shutting down ExecutorService 'applicationTaskExecutor'
+2023-08-19 20:25:07.918  INFO 7464 --- [restartedMain] .s.SpringBootPushNotificationApplication : Starting SpringBootPushNotificationApplication on LAPTOP-V9O67UUN with PID 7464 (E:\projects\me\springboot\springboot-docker-demo\target\classes started by PC in E:\projects\me\springboot\springboot-docker-demo)
+2023-08-19 20:25:07.920  INFO 7464 --- [restartedMain] .s.SpringBootPushNotificationApplication : No active profile set, falling back to default profiles: default
+2023-08-19 20:25:07.953  INFO 7464 --- [restartedMain] o.s.b.devtools.restart.ChangeableUrls    : The Class-Path manifest attribute in C:\Users\PC\.m2\repository\io\grpc\grpc-netty-shaded\1.13.1\grpc-netty-shaded-1.13.1.jar referenced one or more files that do not exist: file:/C:/Users/PC/.m2/repository/io/grpc/grpc-netty-shaded/1.13.1/grpc-core-1.13.1.jar,file:/C:/Users/PC/.m2/repository/io/grpc/grpc-netty-shaded/1.13.1/grpc-context-1.13.1.jar,file:/C:/Users/PC/.m2/repository/io/grpc/grpc-netty-shaded/1.13.1/gson-2.7.jar,file:/C:/Users/PC/.m2/repository/io/grpc/grpc-netty-shaded/1.13.1/guava-20.0.jar,file:/C:/Users/PC/.m2/repository/io/grpc/grpc-netty-shaded/1.13.1/error_prone_annotations-2.1.2.jar,file:/C:/Users/PC/.m2/repository/io/grpc/grpc-netty-shaded/1.13.1/jsr305-3.0.0.jar,file:/C:/Users/PC/.m2/repository/io/grpc/grpc-netty-shaded/1.13.1/opencensus-contrib-grpc-metrics-0.12.3.jar,file:/C:/Users/PC/.m2/repository/io/grpc/grpc-netty-shaded/1.13.1/opencensus-api-0.12.3.jar
+2023-08-19 20:25:07.953  INFO 7464 --- [restartedMain] .e.DevToolsPropertyDefaultsPostProcessor : Devtools property defaults active! Set 'spring.devtools.add-properties' to 'false' to disable
+2023-08-19 20:25:07.954  INFO 7464 --- [restartedMain] .e.DevToolsPropertyDefaultsPostProcessor : For additional web related logging consider setting the 'logging.level.web' property to 'DEBUG'
+2023-08-19 20:25:08.523  INFO 7464 --- [restartedMain] faultConfiguringBeanFactoryPostProcessor : No bean named 'errorChannel' has been explicitly defined. Therefore, a default PublishSubscribeChannel will be created.
+2023-08-19 20:25:08.530  INFO 7464 --- [restartedMain] faultConfiguringBeanFactoryPostProcessor : No bean named 'integrationHeaderChannelRegistry' has been explicitly defined. Therefore, a default DefaultHeaderChannelRegistry will be created.
+2023-08-19 20:25:08.559  INFO 7464 --- [restartedMain] trationDelegate$BeanPostProcessorChecker : Bean 'org.springframework.integration.config.IntegrationManagementConfiguration' of type [org.springframework.integration.config.IntegrationManagementConfiguration] is not eligible for getting processed by all BeanPostProcessors (for example: not eligible for auto-proxying)
+2023-08-19 20:25:08.566  INFO 7464 --- [restartedMain] trationDelegate$BeanPostProcessorChecker : Bean 'integrationChannelResolver' of type [org.springframework.integration.support.channel.BeanFactoryChannelResolver] is not eligible for getting processed by all BeanPostProcessors (for example: not eligible for auto-proxying)
+2023-08-19 20:25:08.567  INFO 7464 --- [restartedMain] trationDelegate$BeanPostProcessorChecker : Bean 'integrationDisposableAutoCreatedBeans' of type [org.springframework.integration.config.annotation.Disposables] is not eligible for getting processed by all BeanPostProcessors (for example: not eligible for auto-proxying)
+2023-08-19 20:25:08.869  INFO 7464 --- [restartedMain] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port(s): 8182 (http)
+2023-08-19 20:25:08.876  INFO 7464 --- [restartedMain] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2023-08-19 20:25:08.877  INFO 7464 --- [restartedMain] org.apache.catalina.core.StandardEngine  : Starting Servlet engine: [Apache Tomcat/9.0.36]
+2023-08-19 20:25:08.959  INFO 7464 --- [restartedMain] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+2023-08-19 20:25:08.959  INFO 7464 --- [restartedMain] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 1005 ms
+2023-08-19 20:25:09.247  INFO 7464 --- [restartedMain] o.s.s.concurrent.ThreadPoolTaskExecutor  : Initializing ExecutorService 'applicationTaskExecutor'
+2023-08-19 20:25:09.392  INFO 7464 --- [restartedMain] o.s.s.c.ThreadPoolTaskScheduler          : Initializing ExecutorService 'taskScheduler'
+2023-08-19 20:25:09.411  INFO 7464 --- [restartedMain] o.s.b.d.a.OptionalLiveReloadServer       : LiveReload server is running on port 35729
+2023-08-19 20:25:09.488  INFO 7464 --- [restartedMain] o.s.i.endpoint.EventDrivenConsumer       : Adding {logging-channel-adapter:_org.springframework.integration.errorLogger} as a subscriber to the 'errorChannel' channel
+2023-08-19 20:25:09.488  INFO 7464 --- [restartedMain] o.s.i.channel.PublishSubscribeChannel    : Channel 'application.errorChannel' has 1 subscriber(s).
+2023-08-19 20:25:09.488  INFO 7464 --- [restartedMain] o.s.i.endpoint.EventDrivenConsumer       : started bean '_org.springframework.integration.errorLogger'
+2023-08-19 20:25:09.519  INFO 7464 --- [restartedMain] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port(s): 8182 (http) with context path ''
+2023-08-19 20:25:09.529  INFO 7464 --- [scheduling-1] c.b.s.ScheduledTasks                     : Cron Task :: Execution Time - 20:25:09
+2023-08-19 20:25:09.531  INFO 7464 --- [restartedMain] .s.SpringBootPushNotificationApplication : Started SpringBootPushNotificationApplication in 1.927 seconds (JVM running for 2.371)
+2023-08-19 20:25:24.346  INFO 7464 --- [http-nio-8182-exec-1] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring DispatcherServlet 'dispatcherServlet'
+2023-08-19 20:25:24.346  INFO 7464 --- [http-nio-8182-exec-1] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
+2023-08-19 20:25:24.352  INFO 7464 --- [http-nio-8182-exec-1] o.s.web.servlet.DispatcherServlet        : Completed initialization in 6 ms
+2023-08-19 20:25:24.386  WARN 7464 --- [http-nio-8182-exec-1] .w.s.m.s.DefaultHandlerExceptionResolver : Resolved [org.springframework.http.converter.HttpMessageNotReadableException: Required request body is missing: public org.springframework.http.ResponseEntity com.bluesky.controller.PushNotificationController.sendMSGHaveNotComeBackIn2Days(com.bluesky.model.PushNotificationRequest)]
+2023-08-19 20:25:27.781  WARN 7464 --- [http-nio-8182-exec-2] .w.s.m.s.DefaultHandlerExceptionResolver : Resolved [org.springframework.http.converter.HttpMessageNotReadableException: Required request body is missing: public org.springframework.http.ResponseEntity com.bluesky.controller.PushNotificationController.sendMSGHaveNotComeBackIn2Days(com.bluesky.model.PushNotificationRequest)]
+2023-08-19 20:26:19.995  INFO 7464 --- [SpringContextShutdownHook] o.s.i.endpoint.EventDrivenConsumer       : Removing {logging-channel-adapter:_org.springframework.integration.errorLogger} as a subscriber to the 'errorChannel' channel
+2023-08-19 20:26:19.996  INFO 7464 --- [SpringContextShutdownHook] o.s.i.channel.PublishSubscribeChannel    : Channel 'application.errorChannel' has 0 subscriber(s).
+2023-08-19 20:26:19.996  INFO 7464 --- [SpringContextShutdownHook] o.s.i.endpoint.EventDrivenConsumer       : stopped bean '_org.springframework.integration.errorLogger'
+2023-08-19 20:26:19.997  INFO 7464 --- [SpringContextShutdownHook] o.s.s.c.ThreadPoolTaskScheduler          : Shutting down ExecutorService 'taskScheduler'
+2023-08-19 20:26:19.997  INFO 7464 --- [SpringContextShutdownHook] o.s.s.concurrent.ThreadPoolTaskExecutor  : Shutting down ExecutorService 'applicationTaskExecutor'
+2023-08-19 20:26:22.577  INFO 4108 --- [restartedMain] .s.SpringBootPushNotificationApplication : Starting SpringBootPushNotificationApplication on LAPTOP-V9O67UUN with PID 4108 (E:\projects\me\springboot\springboot-docker-demo\target\classes started by PC in E:\projects\me\springboot\springboot-docker-demo)
+2023-08-19 20:26:22.579  INFO 4108 --- [restartedMain] .s.SpringBootPushNotificationApplication : No active profile set, falling back to default profiles: default
+2023-08-19 20:26:22.612  INFO 4108 --- [restartedMain] o.s.b.devtools.restart.ChangeableUrls    : The Class-Path manifest attribute in C:\Users\PC\.m2\repository\io\grpc\grpc-netty-shaded\1.13.1\grpc-netty-shaded-1.13.1.jar referenced one or more files that do not exist: file:/C:/Users/PC/.m2/repository/io/grpc/grpc-netty-shaded/1.13.1/grpc-core-1.13.1.jar,file:/C:/Users/PC/.m2/repository/io/grpc/grpc-netty-shaded/1.13.1/grpc-context-1.13.1.jar,file:/C:/Users/PC/.m2/repository/io/grpc/grpc-netty-shaded/1.13.1/gson-2.7.jar,file:/C:/Users/PC/.m2/repository/io/grpc/grpc-netty-shaded/1.13.1/guava-20.0.jar,file:/C:/Users/PC/.m2/repository/io/grpc/grpc-netty-shaded/1.13.1/error_prone_annotations-2.1.2.jar,file:/C:/Users/PC/.m2/repository/io/grpc/grpc-netty-shaded/1.13.1/jsr305-3.0.0.jar,file:/C:/Users/PC/.m2/repository/io/grpc/grpc-netty-shaded/1.13.1/opencensus-contrib-grpc-metrics-0.12.3.jar,file:/C:/Users/PC/.m2/repository/io/grpc/grpc-netty-shaded/1.13.1/opencensus-api-0.12.3.jar
+2023-08-19 20:26:22.613  INFO 4108 --- [restartedMain] .e.DevToolsPropertyDefaultsPostProcessor : Devtools property defaults active! Set 'spring.devtools.add-properties' to 'false' to disable
+2023-08-19 20:26:22.613  INFO 4108 --- [restartedMain] .e.DevToolsPropertyDefaultsPostProcessor : For additional web related logging consider setting the 'logging.level.web' property to 'DEBUG'
+2023-08-19 20:26:23.186  INFO 4108 --- [restartedMain] faultConfiguringBeanFactoryPostProcessor : No bean named 'errorChannel' has been explicitly defined. Therefore, a default PublishSubscribeChannel will be created.
+2023-08-19 20:26:23.195  INFO 4108 --- [restartedMain] faultConfiguringBeanFactoryPostProcessor : No bean named 'integrationHeaderChannelRegistry' has been explicitly defined. Therefore, a default DefaultHeaderChannelRegistry will be created.
+2023-08-19 20:26:23.223  INFO 4108 --- [restartedMain] trationDelegate$BeanPostProcessorChecker : Bean 'org.springframework.integration.config.IntegrationManagementConfiguration' of type [org.springframework.integration.config.IntegrationManagementConfiguration] is not eligible for getting processed by all BeanPostProcessors (for example: not eligible for auto-proxying)
+2023-08-19 20:26:23.231  INFO 4108 --- [restartedMain] trationDelegate$BeanPostProcessorChecker : Bean 'integrationChannelResolver' of type [org.springframework.integration.support.channel.BeanFactoryChannelResolver] is not eligible for getting processed by all BeanPostProcessors (for example: not eligible for auto-proxying)
+2023-08-19 20:26:23.232  INFO 4108 --- [restartedMain] trationDelegate$BeanPostProcessorChecker : Bean 'integrationDisposableAutoCreatedBeans' of type [org.springframework.integration.config.annotation.Disposables] is not eligible for getting processed by all BeanPostProcessors (for example: not eligible for auto-proxying)
+2023-08-19 20:26:23.583  INFO 4108 --- [restartedMain] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port(s): 8182 (http)
+2023-08-19 20:26:23.591  INFO 4108 --- [restartedMain] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2023-08-19 20:26:23.592  INFO 4108 --- [restartedMain] org.apache.catalina.core.StandardEngine  : Starting Servlet engine: [Apache Tomcat/9.0.36]
+2023-08-19 20:26:23.681  INFO 4108 --- [restartedMain] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+2023-08-19 20:26:23.681  INFO 4108 --- [restartedMain] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 1068 ms
+2023-08-19 20:26:23.967  INFO 4108 --- [restartedMain] o.s.s.concurrent.ThreadPoolTaskExecutor  : Initializing ExecutorService 'applicationTaskExecutor'
+2023-08-19 20:26:24.112  INFO 4108 --- [restartedMain] o.s.s.c.ThreadPoolTaskScheduler          : Initializing ExecutorService 'taskScheduler'
+2023-08-19 20:26:24.131  INFO 4108 --- [restartedMain] o.s.b.d.a.OptionalLiveReloadServer       : LiveReload server is running on port 35729
+2023-08-19 20:26:24.212  INFO 4108 --- [restartedMain] o.s.i.endpoint.EventDrivenConsumer       : Adding {logging-channel-adapter:_org.springframework.integration.errorLogger} as a subscriber to the 'errorChannel' channel
+2023-08-19 20:26:24.212  INFO 4108 --- [restartedMain] o.s.i.channel.PublishSubscribeChannel    : Channel 'application.errorChannel' has 1 subscriber(s).
+2023-08-19 20:26:24.212  INFO 4108 --- [restartedMain] o.s.i.endpoint.EventDrivenConsumer       : started bean '_org.springframework.integration.errorLogger'
+2023-08-19 20:26:24.240  INFO 4108 --- [restartedMain] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port(s): 8182 (http) with context path ''
+2023-08-19 20:26:24.251  INFO 4108 --- [restartedMain] .s.SpringBootPushNotificationApplication : Started SpringBootPushNotificationApplication in 2.004 seconds (JVM running for 2.45)
+2023-08-19 20:26:24.250  INFO 4108 --- [scheduling-1] c.b.s.ScheduledTasks                     : Cron Task :: Execution Time - 20:26:24
+2023-08-19 20:26:37.742  INFO 4108 --- [http-nio-8182-exec-1] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring DispatcherServlet 'dispatcherServlet'
+2023-08-19 20:26:37.742  INFO 4108 --- [http-nio-8182-exec-1] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
+2023-08-19 20:26:37.754  INFO 4108 --- [http-nio-8182-exec-1] o.s.web.servlet.DispatcherServlet        : Completed initialization in 12 ms
+2023-08-19 20:27:06.056  INFO 4108 --- [SpringContextShutdownHook] o.s.i.endpoint.EventDrivenConsumer       : Removing {logging-channel-adapter:_org.springframework.integration.errorLogger} as a subscriber to the 'errorChannel' channel
+2023-08-19 20:27:06.056  INFO 4108 --- [SpringContextShutdownHook] o.s.i.channel.PublishSubscribeChannel    : Channel 'application.errorChannel' has 0 subscriber(s).
+2023-08-19 20:27:06.056  INFO 4108 --- [SpringContextShutdownHook] o.s.i.endpoint.EventDrivenConsumer       : stopped bean '_org.springframework.integration.errorLogger'
+2023-08-19 20:27:06.057  INFO 4108 --- [SpringContextShutdownHook] o.s.s.c.ThreadPoolTaskScheduler          : Shutting down ExecutorService 'taskScheduler'
+2023-08-19 20:27:06.058  INFO 4108 --- [SpringContextShutdownHook] o.s.s.concurrent.ThreadPoolTaskExecutor  : Shutting down ExecutorService 'applicationTaskExecutor'
+2023-08-19 20:28:44.461  INFO 23640 --- [restartedMain] c.b.SpringbootDockerDemoApplication      : Starting SpringbootDockerDemoApplication on LAPTOP-V9O67UUN with PID 23640 (E:\projects\me\springboot\springboot-docker-demo\target\classes started by PC in E:\projects\me\springboot\springboot-docker-demo)
+2023-08-19 20:28:44.463  INFO 23640 --- [restartedMain] c.b.SpringbootDockerDemoApplication      : No active profile set, falling back to default profiles: default
+2023-08-19 20:28:44.499  INFO 23640 --- [restartedMain] o.s.b.devtools.restart.ChangeableUrls    : The Class-Path manifest attribute in C:\Users\PC\.m2\repository\io\grpc\grpc-netty-shaded\1.13.1\grpc-netty-shaded-1.13.1.jar referenced one or more files that do not exist: file:/C:/Users/PC/.m2/repository/io/grpc/grpc-netty-shaded/1.13.1/grpc-core-1.13.1.jar,file:/C:/Users/PC/.m2/repository/io/grpc/grpc-netty-shaded/1.13.1/grpc-context-1.13.1.jar,file:/C:/Users/PC/.m2/repository/io/grpc/grpc-netty-shaded/1.13.1/gson-2.7.jar,file:/C:/Users/PC/.m2/repository/io/grpc/grpc-netty-shaded/1.13.1/guava-20.0.jar,file:/C:/Users/PC/.m2/repository/io/grpc/grpc-netty-shaded/1.13.1/error_prone_annotations-2.1.2.jar,file:/C:/Users/PC/.m2/repository/io/grpc/grpc-netty-shaded/1.13.1/jsr305-3.0.0.jar,file:/C:/Users/PC/.m2/repository/io/grpc/grpc-netty-shaded/1.13.1/opencensus-contrib-grpc-metrics-0.12.3.jar,file:/C:/Users/PC/.m2/repository/io/grpc/grpc-netty-shaded/1.13.1/opencensus-api-0.12.3.jar
+2023-08-19 20:28:44.499  INFO 23640 --- [restartedMain] .e.DevToolsPropertyDefaultsPostProcessor : Devtools property defaults active! Set 'spring.devtools.add-properties' to 'false' to disable
+2023-08-19 20:28:44.499  INFO 23640 --- [restartedMain] .e.DevToolsPropertyDefaultsPostProcessor : For additional web related logging consider setting the 'logging.level.web' property to 'DEBUG'
+2023-08-19 20:28:45.085  INFO 23640 --- [restartedMain] faultConfiguringBeanFactoryPostProcessor : No bean named 'errorChannel' has been explicitly defined. Therefore, a default PublishSubscribeChannel will be created.
+2023-08-19 20:28:45.093  INFO 23640 --- [restartedMain] faultConfiguringBeanFactoryPostProcessor : No bean named 'integrationHeaderChannelRegistry' has been explicitly defined. Therefore, a default DefaultHeaderChannelRegistry will be created.
+2023-08-19 20:28:45.119  INFO 23640 --- [restartedMain] trationDelegate$BeanPostProcessorChecker : Bean 'org.springframework.integration.config.IntegrationManagementConfiguration' of type [org.springframework.integration.config.IntegrationManagementConfiguration] is not eligible for getting processed by all BeanPostProcessors (for example: not eligible for auto-proxying)
+2023-08-19 20:28:45.126  INFO 23640 --- [restartedMain] trationDelegate$BeanPostProcessorChecker : Bean 'integrationChannelResolver' of type [org.springframework.integration.support.channel.BeanFactoryChannelResolver] is not eligible for getting processed by all BeanPostProcessors (for example: not eligible for auto-proxying)
+2023-08-19 20:28:45.127  INFO 23640 --- [restartedMain] trationDelegate$BeanPostProcessorChecker : Bean 'integrationDisposableAutoCreatedBeans' of type [org.springframework.integration.config.annotation.Disposables] is not eligible for getting processed by all BeanPostProcessors (for example: not eligible for auto-proxying)
+2023-08-19 20:28:45.436  INFO 23640 --- [restartedMain] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port(s): 8182 (http)
+2023-08-19 20:28:45.443  INFO 23640 --- [restartedMain] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2023-08-19 20:28:45.444  INFO 23640 --- [restartedMain] org.apache.catalina.core.StandardEngine  : Starting Servlet engine: [Apache Tomcat/9.0.36]
+2023-08-19 20:28:45.530  INFO 23640 --- [restartedMain] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+2023-08-19 20:28:45.531  INFO 23640 --- [restartedMain] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 1032 ms
+2023-08-19 20:28:45.805  INFO 23640 --- [restartedMain] o.s.s.concurrent.ThreadPoolTaskExecutor  : Initializing ExecutorService 'applicationTaskExecutor'
+2023-08-19 20:28:45.947  INFO 23640 --- [restartedMain] o.s.s.c.ThreadPoolTaskScheduler          : Initializing ExecutorService 'taskScheduler'
+2023-08-19 20:28:45.966  INFO 23640 --- [restartedMain] o.s.b.d.a.OptionalLiveReloadServer       : LiveReload server is running on port 35729
+2023-08-19 20:28:46.053  INFO 23640 --- [restartedMain] o.s.i.endpoint.EventDrivenConsumer       : Adding {logging-channel-adapter:_org.springframework.integration.errorLogger} as a subscriber to the 'errorChannel' channel
+2023-08-19 20:28:46.053  INFO 23640 --- [restartedMain] o.s.i.channel.PublishSubscribeChannel    : Channel 'application.errorChannel' has 1 subscriber(s).
+2023-08-19 20:28:46.053  INFO 23640 --- [restartedMain] o.s.i.endpoint.EventDrivenConsumer       : started bean '_org.springframework.integration.errorLogger'
+2023-08-19 20:28:46.088  INFO 23640 --- [restartedMain] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port(s): 8182 (http) with context path ''
+2023-08-19 20:28:46.098  INFO 23640 --- [scheduling-1] c.b.s.ScheduledTasks                     : Cron Task :: Execution Time - 20:28:46
+2023-08-19 20:28:46.100  INFO 23640 --- [restartedMain] c.b.SpringbootDockerDemoApplication      : Started SpringbootDockerDemoApplication in 1.946 seconds (JVM running for 2.364)
+2023-08-19 20:28:54.108  INFO 23640 --- [http-nio-8182-exec-1] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring DispatcherServlet 'dispatcherServlet'
+2023-08-19 20:28:54.108  INFO 23640 --- [http-nio-8182-exec-1] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
+2023-08-19 20:28:54.114  INFO 23640 --- [http-nio-8182-exec-1] o.s.web.servlet.DispatcherServlet        : Completed initialization in 6 ms
+2023-08-19 20:29:11.170  INFO 23640 --- [SpringContextShutdownHook] o.s.i.endpoint.EventDrivenConsumer       : Removing {logging-channel-adapter:_org.springframework.integration.errorLogger} as a subscriber to the 'errorChannel' channel
+2023-08-19 20:29:11.170  INFO 23640 --- [SpringContextShutdownHook] o.s.i.channel.PublishSubscribeChannel    : Channel 'application.errorChannel' has 0 subscriber(s).
+2023-08-19 20:29:11.170  INFO 23640 --- [SpringContextShutdownHook] o.s.i.endpoint.EventDrivenConsumer       : stopped bean '_org.springframework.integration.errorLogger'
+2023-08-19 20:29:11.172  INFO 23640 --- [SpringContextShutdownHook] o.s.s.c.ThreadPoolTaskScheduler          : Shutting down ExecutorService 'taskScheduler'
+2023-08-19 20:29:11.172  INFO 23640 --- [SpringContextShutdownHook] o.s.s.concurrent.ThreadPoolTaskExecutor  : Shutting down ExecutorService 'applicationTaskExecutor'
+2023-08-19 20:29:15.429  INFO 4624 --- [restartedMain] c.b.SpringbootDockerDemoApplication      : Starting SpringbootDockerDemoApplication on LAPTOP-V9O67UUN with PID 4624 (E:\projects\me\springboot\springboot-docker-demo\target\classes started by PC in E:\projects\me\springboot\springboot-docker-demo)
+2023-08-19 20:29:15.431  INFO 4624 --- [restartedMain] c.b.SpringbootDockerDemoApplication      : No active profile set, falling back to default profiles: default
+2023-08-19 20:29:15.465  INFO 4624 --- [restartedMain] o.s.b.devtools.restart.ChangeableUrls    : The Class-Path manifest attribute in C:\Users\PC\.m2\repository\io\grpc\grpc-netty-shaded\1.13.1\grpc-netty-shaded-1.13.1.jar referenced one or more files that do not exist: file:/C:/Users/PC/.m2/repository/io/grpc/grpc-netty-shaded/1.13.1/grpc-core-1.13.1.jar,file:/C:/Users/PC/.m2/repository/io/grpc/grpc-netty-shaded/1.13.1/grpc-context-1.13.1.jar,file:/C:/Users/PC/.m2/repository/io/grpc/grpc-netty-shaded/1.13.1/gson-2.7.jar,file:/C:/Users/PC/.m2/repository/io/grpc/grpc-netty-shaded/1.13.1/guava-20.0.jar,file:/C:/Users/PC/.m2/repository/io/grpc/grpc-netty-shaded/1.13.1/error_prone_annotations-2.1.2.jar,file:/C:/Users/PC/.m2/repository/io/grpc/grpc-netty-shaded/1.13.1/jsr305-3.0.0.jar,file:/C:/Users/PC/.m2/repository/io/grpc/grpc-netty-shaded/1.13.1/opencensus-contrib-grpc-metrics-0.12.3.jar,file:/C:/Users/PC/.m2/repository/io/grpc/grpc-netty-shaded/1.13.1/opencensus-api-0.12.3.jar
+2023-08-19 20:29:15.465  INFO 4624 --- [restartedMain] .e.DevToolsPropertyDefaultsPostProcessor : Devtools property defaults active! Set 'spring.devtools.add-properties' to 'false' to disable
+2023-08-19 20:29:15.465  INFO 4624 --- [restartedMain] .e.DevToolsPropertyDefaultsPostProcessor : For additional web related logging consider setting the 'logging.level.web' property to 'DEBUG'
+2023-08-19 20:29:16.074  INFO 4624 --- [restartedMain] faultConfiguringBeanFactoryPostProcessor : No bean named 'errorChannel' has been explicitly defined. Therefore, a default PublishSubscribeChannel will be created.
+2023-08-19 20:29:16.080  INFO 4624 --- [restartedMain] faultConfiguringBeanFactoryPostProcessor : No bean named 'integrationHeaderChannelRegistry' has been explicitly defined. Therefore, a default DefaultHeaderChannelRegistry will be created.
+2023-08-19 20:29:16.107  INFO 4624 --- [restartedMain] trationDelegate$BeanPostProcessorChecker : Bean 'org.springframework.integration.config.IntegrationManagementConfiguration' of type [org.springframework.integration.config.IntegrationManagementConfiguration] is not eligible for getting processed by all BeanPostProcessors (for example: not eligible for auto-proxying)
+2023-08-19 20:29:16.114  INFO 4624 --- [restartedMain] trationDelegate$BeanPostProcessorChecker : Bean 'integrationChannelResolver' of type [org.springframework.integration.support.channel.BeanFactoryChannelResolver] is not eligible for getting processed by all BeanPostProcessors (for example: not eligible for auto-proxying)
+2023-08-19 20:29:16.115  INFO 4624 --- [restartedMain] trationDelegate$BeanPostProcessorChecker : Bean 'integrationDisposableAutoCreatedBeans' of type [org.springframework.integration.config.annotation.Disposables] is not eligible for getting processed by all BeanPostProcessors (for example: not eligible for auto-proxying)
+2023-08-19 20:29:16.445  INFO 4624 --- [restartedMain] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port(s): 8182 (http)
+2023-08-19 20:29:16.453  INFO 4624 --- [restartedMain] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2023-08-19 20:29:16.453  INFO 4624 --- [restartedMain] org.apache.catalina.core.StandardEngine  : Starting Servlet engine: [Apache Tomcat/9.0.36]
+2023-08-19 20:29:16.545  INFO 4624 --- [restartedMain] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+2023-08-19 20:29:16.545  INFO 4624 --- [restartedMain] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 1080 ms
+2023-08-19 20:29:16.850  INFO 4624 --- [restartedMain] o.s.s.concurrent.ThreadPoolTaskExecutor  : Initializing ExecutorService 'applicationTaskExecutor'
+2023-08-19 20:29:17.002  INFO 4624 --- [restartedMain] o.s.s.c.ThreadPoolTaskScheduler          : Initializing ExecutorService 'taskScheduler'
+2023-08-19 20:29:17.021  INFO 4624 --- [restartedMain] o.s.b.d.a.OptionalLiveReloadServer       : LiveReload server is running on port 35729
+2023-08-19 20:29:17.104  INFO 4624 --- [restartedMain] o.s.i.endpoint.EventDrivenConsumer       : Adding {logging-channel-adapter:_org.springframework.integration.errorLogger} as a subscriber to the 'errorChannel' channel
+2023-08-19 20:29:17.104  INFO 4624 --- [restartedMain] o.s.i.channel.PublishSubscribeChannel    : Channel 'application.errorChannel' has 1 subscriber(s).
+2023-08-19 20:29:17.104  INFO 4624 --- [restartedMain] o.s.i.endpoint.EventDrivenConsumer       : started bean '_org.springframework.integration.errorLogger'
+2023-08-19 20:29:17.137  INFO 4624 --- [restartedMain] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port(s): 8182 (http) with context path ''
+2023-08-19 20:29:17.147  INFO 4624 --- [restartedMain] c.b.SpringbootDockerDemoApplication      : Started SpringbootDockerDemoApplication in 2.027 seconds (JVM running for 2.461)
+2023-08-19 20:29:17.146  INFO 4624 --- [scheduling-1] c.b.s.ScheduledTasks                     : Cron Task :: Execution Time - 20:29:17
+2023-08-19 20:29:20.949  INFO 4624 --- [http-nio-8182-exec-1] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring DispatcherServlet 'dispatcherServlet'
+2023-08-19 20:29:20.949  INFO 4624 --- [http-nio-8182-exec-1] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
+2023-08-19 20:29:20.955  INFO 4624 --- [http-nio-8182-exec-1] o.s.web.servlet.DispatcherServlet        : Completed initialization in 5 ms
+2023-08-19 20:29:51.159  INFO 4624 --- [SpringContextShutdownHook] o.s.i.endpoint.EventDrivenConsumer       : Removing {logging-channel-adapter:_org.springframework.integration.errorLogger} as a subscriber to the 'errorChannel' channel
+2023-08-19 20:29:51.159  INFO 4624 --- [SpringContextShutdownHook] o.s.i.channel.PublishSubscribeChannel    : Channel 'application.errorChannel' has 0 subscriber(s).
+2023-08-19 20:29:51.159  INFO 4624 --- [SpringContextShutdownHook] o.s.i.endpoint.EventDrivenConsumer       : stopped bean '_org.springframework.integration.errorLogger'
+2023-08-19 20:29:51.160  INFO 4624 --- [SpringContextShutdownHook] o.s.s.c.ThreadPoolTaskScheduler          : Shutting down ExecutorService 'taskScheduler'
+2023-08-19 20:29:51.160  INFO 4624 --- [SpringContextShutdownHook] o.s.s.concurrent.ThreadPoolTaskExecutor  : Shutting down ExecutorService 'applicationTaskExecutor'
+2023-08-19 20:31:21.179  INFO 9460 --- [restartedMain] c.b.SpringbootDockerDemoApplication      : Starting SpringbootDockerDemoApplication on LAPTOP-V9O67UUN with PID 9460 (E:\projects\me\springboot\springboot-docker-demo\target\classes started by PC in E:\projects\me\springboot\springboot-docker-demo)
+2023-08-19 20:31:21.182  INFO 9460 --- [restartedMain] c.b.SpringbootDockerDemoApplication      : No active profile set, falling back to default profiles: default
+2023-08-19 20:31:21.215  INFO 9460 --- [restartedMain] o.s.b.devtools.restart.ChangeableUrls    : The Class-Path manifest attribute in C:\Users\PC\.m2\repository\io\grpc\grpc-netty-shaded\1.13.1\grpc-netty-shaded-1.13.1.jar referenced one or more files that do not exist: file:/C:/Users/PC/.m2/repository/io/grpc/grpc-netty-shaded/1.13.1/grpc-core-1.13.1.jar,file:/C:/Users/PC/.m2/repository/io/grpc/grpc-netty-shaded/1.13.1/grpc-context-1.13.1.jar,file:/C:/Users/PC/.m2/repository/io/grpc/grpc-netty-shaded/1.13.1/gson-2.7.jar,file:/C:/Users/PC/.m2/repository/io/grpc/grpc-netty-shaded/1.13.1/guava-20.0.jar,file:/C:/Users/PC/.m2/repository/io/grpc/grpc-netty-shaded/1.13.1/error_prone_annotations-2.1.2.jar,file:/C:/Users/PC/.m2/repository/io/grpc/grpc-netty-shaded/1.13.1/jsr305-3.0.0.jar,file:/C:/Users/PC/.m2/repository/io/grpc/grpc-netty-shaded/1.13.1/opencensus-contrib-grpc-metrics-0.12.3.jar,file:/C:/Users/PC/.m2/repository/io/grpc/grpc-netty-shaded/1.13.1/opencensus-api-0.12.3.jar
+2023-08-19 20:31:21.216  INFO 9460 --- [restartedMain] .e.DevToolsPropertyDefaultsPostProcessor : Devtools property defaults active! Set 'spring.devtools.add-properties' to 'false' to disable
+2023-08-19 20:31:21.216  INFO 9460 --- [restartedMain] .e.DevToolsPropertyDefaultsPostProcessor : For additional web related logging consider setting the 'logging.level.web' property to 'DEBUG'
+2023-08-19 20:31:21.820  INFO 9460 --- [restartedMain] faultConfiguringBeanFactoryPostProcessor : No bean named 'errorChannel' has been explicitly defined. Therefore, a default PublishSubscribeChannel will be created.
+2023-08-19 20:31:21.826  INFO 9460 --- [restartedMain] faultConfiguringBeanFactoryPostProcessor : No bean named 'integrationHeaderChannelRegistry' has been explicitly defined. Therefore, a default DefaultHeaderChannelRegistry will be created.
+2023-08-19 20:31:21.852  INFO 9460 --- [restartedMain] trationDelegate$BeanPostProcessorChecker : Bean 'org.springframework.integration.config.IntegrationManagementConfiguration' of type [org.springframework.integration.config.IntegrationManagementConfiguration] is not eligible for getting processed by all BeanPostProcessors (for example: not eligible for auto-proxying)
+2023-08-19 20:31:21.859  INFO 9460 --- [restartedMain] trationDelegate$BeanPostProcessorChecker : Bean 'integrationChannelResolver' of type [org.springframework.integration.support.channel.BeanFactoryChannelResolver] is not eligible for getting processed by all BeanPostProcessors (for example: not eligible for auto-proxying)
+2023-08-19 20:31:21.860  INFO 9460 --- [restartedMain] trationDelegate$BeanPostProcessorChecker : Bean 'integrationDisposableAutoCreatedBeans' of type [org.springframework.integration.config.annotation.Disposables] is not eligible for getting processed by all BeanPostProcessors (for example: not eligible for auto-proxying)
+2023-08-19 20:31:22.190  INFO 9460 --- [restartedMain] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port(s): 8182 (http)
+2023-08-19 20:31:22.197  INFO 9460 --- [restartedMain] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2023-08-19 20:31:22.198  INFO 9460 --- [restartedMain] org.apache.catalina.core.StandardEngine  : Starting Servlet engine: [Apache Tomcat/9.0.36]
+2023-08-19 20:31:22.289  INFO 9460 --- [restartedMain] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+2023-08-19 20:31:22.289  INFO 9460 --- [restartedMain] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 1073 ms
+2023-08-19 20:31:22.575  INFO 9460 --- [restartedMain] o.s.s.concurrent.ThreadPoolTaskExecutor  : Initializing ExecutorService 'applicationTaskExecutor'
+2023-08-19 20:31:22.725  INFO 9460 --- [restartedMain] o.s.s.c.ThreadPoolTaskScheduler          : Initializing ExecutorService 'taskScheduler'
+2023-08-19 20:31:22.744  INFO 9460 --- [restartedMain] o.s.b.d.a.OptionalLiveReloadServer       : LiveReload server is running on port 35729
+2023-08-19 20:31:22.827  INFO 9460 --- [restartedMain] o.s.i.endpoint.EventDrivenConsumer       : Adding {logging-channel-adapter:_org.springframework.integration.errorLogger} as a subscriber to the 'errorChannel' channel
+2023-08-19 20:31:22.827  INFO 9460 --- [restartedMain] o.s.i.channel.PublishSubscribeChannel    : Channel 'application.errorChannel' has 1 subscriber(s).
+2023-08-19 20:31:22.827  INFO 9460 --- [restartedMain] o.s.i.endpoint.EventDrivenConsumer       : started bean '_org.springframework.integration.errorLogger'
+2023-08-19 20:31:22.859  INFO 9460 --- [restartedMain] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port(s): 8182 (http) with context path ''
+2023-08-19 20:31:22.867  INFO 9460 --- [restartedMain] c.b.SpringbootDockerDemoApplication      : Started SpringbootDockerDemoApplication in 2.005 seconds (JVM running for 2.474)
+2023-08-19 20:31:22.867  INFO 9460 --- [scheduling-1] c.b.s.ScheduledTasks                     : Cron Task :: Execution Time - 20:31:22
+2023-08-19 20:31:27.658  INFO 9460 --- [http-nio-8182-exec-1] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring DispatcherServlet 'dispatcherServlet'
+2023-08-19 20:31:27.658  INFO 9460 --- [http-nio-8182-exec-1] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
+2023-08-19 20:31:27.665  INFO 9460 --- [http-nio-8182-exec-1] o.s.web.servlet.DispatcherServlet        : Completed initialization in 7 ms
+2023-08-19 20:32:10.056  INFO 9460 --- [Thread-270] o.s.i.endpoint.EventDrivenConsumer       : Removing {logging-channel-adapter:_org.springframework.integration.errorLogger} as a subscriber to the 'errorChannel' channel
+2023-08-19 20:32:10.056  INFO 9460 --- [Thread-270] o.s.i.channel.PublishSubscribeChannel    : Channel 'application.errorChannel' has 0 subscriber(s).
+2023-08-19 20:32:10.057  INFO 9460 --- [Thread-270] o.s.i.endpoint.EventDrivenConsumer       : stopped bean '_org.springframework.integration.errorLogger'
+2023-08-19 20:32:10.057  INFO 9460 --- [Thread-270] o.s.s.c.ThreadPoolTaskScheduler          : Shutting down ExecutorService 'taskScheduler'
+2023-08-19 20:32:10.057  INFO 9460 --- [Thread-270] o.s.s.concurrent.ThreadPoolTaskExecutor  : Shutting down ExecutorService 'applicationTaskExecutor'
+2023-08-19 20:32:10.154  INFO 9460 --- [restartedMain] c.b.SpringbootDockerDemoApplication      : Starting SpringbootDockerDemoApplication on LAPTOP-V9O67UUN with PID 9460 (E:\projects\me\springboot\springboot-docker-demo\target\classes started by PC in E:\projects\me\springboot\springboot-docker-demo)
+2023-08-19 20:32:10.154  INFO 9460 --- [restartedMain] c.b.SpringbootDockerDemoApplication      : No active profile set, falling back to default profiles: default
+2023-08-19 20:32:10.468  INFO 9460 --- [restartedMain] faultConfiguringBeanFactoryPostProcessor : No bean named 'errorChannel' has been explicitly defined. Therefore, a default PublishSubscribeChannel will be created.
+2023-08-19 20:32:10.468  INFO 9460 --- [restartedMain] faultConfiguringBeanFactoryPostProcessor : No bean named 'taskScheduler' has been explicitly defined. Therefore, a default ThreadPoolTaskScheduler will be created.
+2023-08-19 20:32:10.475  INFO 9460 --- [restartedMain] faultConfiguringBeanFactoryPostProcessor : No bean named 'integrationHeaderChannelRegistry' has been explicitly defined. Therefore, a default DefaultHeaderChannelRegistry will be created.
+2023-08-19 20:32:10.492  INFO 9460 --- [restartedMain] trationDelegate$BeanPostProcessorChecker : Bean 'org.springframework.integration.config.IntegrationManagementConfiguration' of type [org.springframework.integration.config.IntegrationManagementConfiguration] is not eligible for getting processed by all BeanPostProcessors (for example: not eligible for auto-proxying)
+2023-08-19 20:32:10.492  INFO 9460 --- [restartedMain] trationDelegate$BeanPostProcessorChecker : Bean 'integrationChannelResolver' of type [org.springframework.integration.support.channel.BeanFactoryChannelResolver] is not eligible for getting processed by all BeanPostProcessors (for example: not eligible for auto-proxying)
+2023-08-19 20:32:10.492  INFO 9460 --- [restartedMain] trationDelegate$BeanPostProcessorChecker : Bean 'integrationDisposableAutoCreatedBeans' of type [org.springframework.integration.config.annotation.Disposables] is not eligible for getting processed by all BeanPostProcessors (for example: not eligible for auto-proxying)
+2023-08-19 20:32:10.664  INFO 9460 --- [restartedMain] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port(s): 8182 (http)
+2023-08-19 20:32:10.669  INFO 9460 --- [restartedMain] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2023-08-19 20:32:10.673  INFO 9460 --- [restartedMain] org.apache.catalina.core.StandardEngine  : Starting Servlet engine: [Apache Tomcat/9.0.36]
+2023-08-19 20:32:10.723  INFO 9460 --- [restartedMain] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+2023-08-19 20:32:10.723  INFO 9460 --- [restartedMain] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 565 ms
+2023-08-19 20:32:10.817  INFO 9460 --- [restartedMain] o.s.s.concurrent.ThreadPoolTaskExecutor  : Initializing ExecutorService 'applicationTaskExecutor'
+2023-08-19 20:32:10.919  INFO 9460 --- [restartedMain] o.s.b.d.a.OptionalLiveReloadServer       : LiveReload server is running on port 35729
+2023-08-19 20:32:11.014  INFO 9460 --- [restartedMain] o.s.s.c.ThreadPoolTaskScheduler          : Initializing ExecutorService 'taskScheduler'
+2023-08-19 20:32:11.050  INFO 9460 --- [restartedMain] o.s.i.endpoint.EventDrivenConsumer       : Adding {logging-channel-adapter:_org.springframework.integration.errorLogger} as a subscriber to the 'errorChannel' channel
+2023-08-19 20:32:11.050  INFO 9460 --- [restartedMain] o.s.i.channel.PublishSubscribeChannel    : Channel 'application.errorChannel' has 1 subscriber(s).
+2023-08-19 20:32:11.050  INFO 9460 --- [restartedMain] o.s.i.endpoint.EventDrivenConsumer       : started bean '_org.springframework.integration.errorLogger'
+2023-08-19 20:32:11.066  INFO 9460 --- [restartedMain] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port(s): 8182 (http) with context path ''
+2023-08-19 20:32:11.073  INFO 9460 --- [restartedMain] c.b.SpringbootDockerDemoApplication      : Started SpringbootDockerDemoApplication in 0.953 seconds (JVM running for 50.679)
+2023-08-19 20:32:11.085  INFO 9460 --- [restartedMain] .ConditionEvaluationDeltaLoggingListener : Condition evaluation delta:
+
+
+==========================
+CONDITION EVALUATION DELTA
+==========================
+
+
+Positive matches:
+-----------------
+
+    None
+
+
+Negative matches:
+-----------------
+
+   TaskSchedulingAutoConfiguration#taskScheduler:
+      Did not match:
+         - @ConditionalOnBean (names: org.springframework.context.annotation.internalScheduledAnnotationProcessor; SearchStrategy: all) did not find any beans named org.springframework.context.annotation.internalScheduledAnnotationProcessor (OnBeanCondition)
+
+
+Exclusions:
+-----------
+
+    None
+
+
+Unconditional classes:
+----------------------
+
+    None
+
+
+
+2023-08-19 20:32:12.398  INFO 9460 --- [Thread-273] o.s.i.endpoint.EventDrivenConsumer       : Removing {logging-channel-adapter:_org.springframework.integration.errorLogger} as a subscriber to the 'errorChannel' channel
+2023-08-19 20:32:12.398  INFO 9460 --- [Thread-273] o.s.i.channel.PublishSubscribeChannel    : Channel 'application.errorChannel' has 0 subscriber(s).
+2023-08-19 20:32:12.398  INFO 9460 --- [Thread-273] o.s.i.endpoint.EventDrivenConsumer       : stopped bean '_org.springframework.integration.errorLogger'
+2023-08-19 20:32:12.398  INFO 9460 --- [Thread-273] o.s.s.c.ThreadPoolTaskScheduler          : Shutting down ExecutorService 'taskScheduler'
+2023-08-19 20:32:12.398  INFO 9460 --- [Thread-273] o.s.s.concurrent.ThreadPoolTaskExecutor  : Shutting down ExecutorService 'applicationTaskExecutor'
+2023-08-19 20:32:12.490  INFO 9460 --- [restartedMain] c.b.SpringbootDockerDemoApplication      : Starting SpringbootDockerDemoApplication on LAPTOP-V9O67UUN with PID 9460 (E:\projects\me\springboot\springboot-docker-demo\target\classes started by PC in E:\projects\me\springboot\springboot-docker-demo)
+2023-08-19 20:32:12.490  INFO 9460 --- [restartedMain] c.b.SpringbootDockerDemoApplication      : No active profile set, falling back to default profiles: default
+2023-08-19 20:32:12.783  INFO 9460 --- [restartedMain] faultConfiguringBeanFactoryPostProcessor : No bean named 'errorChannel' has been explicitly defined. Therefore, a default PublishSubscribeChannel will be created.
+2023-08-19 20:32:12.783  INFO 9460 --- [restartedMain] faultConfiguringBeanFactoryPostProcessor : No bean named 'integrationHeaderChannelRegistry' has been explicitly defined. Therefore, a default DefaultHeaderChannelRegistry will be created.
+2023-08-19 20:32:12.797  INFO 9460 --- [restartedMain] trationDelegate$BeanPostProcessorChecker : Bean 'org.springframework.integration.config.IntegrationManagementConfiguration' of type [org.springframework.integration.config.IntegrationManagementConfiguration] is not eligible for getting processed by all BeanPostProcessors (for example: not eligible for auto-proxying)
+2023-08-19 20:32:12.801  INFO 9460 --- [restartedMain] trationDelegate$BeanPostProcessorChecker : Bean 'integrationChannelResolver' of type [org.springframework.integration.support.channel.BeanFactoryChannelResolver] is not eligible for getting processed by all BeanPostProcessors (for example: not eligible for auto-proxying)
+2023-08-19 20:32:12.801  INFO 9460 --- [restartedMain] trationDelegate$BeanPostProcessorChecker : Bean 'integrationDisposableAutoCreatedBeans' of type [org.springframework.integration.config.annotation.Disposables] is not eligible for getting processed by all BeanPostProcessors (for example: not eligible for auto-proxying)
+2023-08-19 20:32:12.847  INFO 9460 --- [restartedMain] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port(s): 8182 (http)
+2023-08-19 20:32:12.847  INFO 9460 --- [restartedMain] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2023-08-19 20:32:12.847  INFO 9460 --- [restartedMain] org.apache.catalina.core.StandardEngine  : Starting Servlet engine: [Apache Tomcat/9.0.36]
+2023-08-19 20:32:12.875  INFO 9460 --- [restartedMain] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+2023-08-19 20:32:12.875  INFO 9460 --- [restartedMain] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 385 ms
+2023-08-19 20:32:12.940  INFO 9460 --- [restartedMain] o.s.s.concurrent.ThreadPoolTaskExecutor  : Initializing ExecutorService 'applicationTaskExecutor'
+2023-08-19 20:32:13.000  INFO 9460 --- [restartedMain] o.s.s.c.ThreadPoolTaskScheduler          : Initializing ExecutorService 'taskScheduler'
+2023-08-19 20:32:13.006  INFO 9460 --- [restartedMain] o.s.b.d.a.OptionalLiveReloadServer       : LiveReload server is running on port 35729
+2023-08-19 20:32:13.025  INFO 9460 --- [restartedMain] o.s.i.endpoint.EventDrivenConsumer       : Adding {logging-channel-adapter:_org.springframework.integration.errorLogger} as a subscriber to the 'errorChannel' channel
+2023-08-19 20:32:13.025  INFO 9460 --- [restartedMain] o.s.i.channel.PublishSubscribeChannel    : Channel 'application.errorChannel' has 1 subscriber(s).
+2023-08-19 20:32:13.025  INFO 9460 --- [restartedMain] o.s.i.endpoint.EventDrivenConsumer       : started bean '_org.springframework.integration.errorLogger'
+2023-08-19 20:32:13.040  INFO 9460 --- [restartedMain] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port(s): 8182 (http) with context path ''
+2023-08-19 20:32:13.041  INFO 9460 --- [scheduling-1] c.b.s.ScheduledTasks                     : Cron Task :: Execution Time - 20:32:13
+2023-08-19 20:32:13.041  INFO 9460 --- [restartedMain] c.b.SpringbootDockerDemoApplication      : Started SpringbootDockerDemoApplication in 0.579 seconds (JVM running for 52.65)
+2023-08-19 20:32:13.046  INFO 9460 --- [restartedMain] .ConditionEvaluationDeltaLoggingListener : Condition evaluation delta:
+
+
+==========================
+CONDITION EVALUATION DELTA
+==========================
+
+
+Positive matches:
+-----------------
+
+   TaskSchedulingAutoConfiguration#taskScheduler matched:
+      - @ConditionalOnBean (names: org.springframework.context.annotation.internalScheduledAnnotationProcessor; SearchStrategy: all) found bean 'org.springframework.context.annotation.internalScheduledAnnotationProcessor'; @ConditionalOnMissingBean (types: org.springframework.scheduling.annotation.SchedulingConfigurer,org.springframework.scheduling.TaskScheduler,java.util.concurrent.ScheduledExecutorService; SearchStrategy: all) did not find any beans (OnBeanCondition)
+
+
+Negative matches:
+-----------------
+
+    None
+
+
+Exclusions:
+-----------
+
+    None
+
+
+Unconditional classes:
+----------------------
+
+    None
+
+
+
+2023-08-19 20:33:16.677  INFO 9460 --- [Thread-413] o.s.i.endpoint.EventDrivenConsumer       : Removing {logging-channel-adapter:_org.springframework.integration.errorLogger} as a subscriber to the 'errorChannel' channel
+2023-08-19 20:33:16.678  INFO 9460 --- [Thread-413] o.s.i.channel.PublishSubscribeChannel    : Channel 'application.errorChannel' has 0 subscriber(s).
+2023-08-19 20:33:16.678  INFO 9460 --- [Thread-413] o.s.i.endpoint.EventDrivenConsumer       : stopped bean '_org.springframework.integration.errorLogger'
+2023-08-19 20:33:16.678  INFO 9460 --- [Thread-413] o.s.s.c.ThreadPoolTaskScheduler          : Shutting down ExecutorService 'taskScheduler'
+2023-08-19 20:33:16.679  INFO 9460 --- [Thread-413] o.s.s.concurrent.ThreadPoolTaskExecutor  : Shutting down ExecutorService 'applicationTaskExecutor'
+2023-08-19 20:33:16.746  INFO 9460 --- [restartedMain] c.b.SpringbootDockerDemoApplication      : Starting SpringbootDockerDemoApplication on LAPTOP-V9O67UUN with PID 9460 (E:\projects\me\springboot\springboot-docker-demo\target\classes started by PC in E:\projects\me\springboot\springboot-docker-demo)
+2023-08-19 20:33:16.747  INFO 9460 --- [restartedMain] c.b.SpringbootDockerDemoApplication      : No active profile set, falling back to default profiles: default
+2023-08-19 20:33:17.010  INFO 9460 --- [restartedMain] faultConfiguringBeanFactoryPostProcessor : No bean named 'errorChannel' has been explicitly defined. Therefore, a default PublishSubscribeChannel will be created.
+2023-08-19 20:33:17.010  INFO 9460 --- [restartedMain] faultConfiguringBeanFactoryPostProcessor : No bean named 'taskScheduler' has been explicitly defined. Therefore, a default ThreadPoolTaskScheduler will be created.
+2023-08-19 20:33:17.011  INFO 9460 --- [restartedMain] faultConfiguringBeanFactoryPostProcessor : No bean named 'integrationHeaderChannelRegistry' has been explicitly defined. Therefore, a default DefaultHeaderChannelRegistry will be created.
+2023-08-19 20:33:17.015  INFO 9460 --- [restartedMain] trationDelegate$BeanPostProcessorChecker : Bean 'org.springframework.integration.config.IntegrationManagementConfiguration' of type [org.springframework.integration.config.IntegrationManagementConfiguration] is not eligible for getting processed by all BeanPostProcessors (for example: not eligible for auto-proxying)
+2023-08-19 20:33:17.015  INFO 9460 --- [restartedMain] trationDelegate$BeanPostProcessorChecker : Bean 'integrationChannelResolver' of type [org.springframework.integration.support.channel.BeanFactoryChannelResolver] is not eligible for getting processed by all BeanPostProcessors (for example: not eligible for auto-proxying)
+2023-08-19 20:33:17.016  INFO 9460 --- [restartedMain] trationDelegate$BeanPostProcessorChecker : Bean 'integrationDisposableAutoCreatedBeans' of type [org.springframework.integration.config.annotation.Disposables] is not eligible for getting processed by all BeanPostProcessors (for example: not eligible for auto-proxying)
+2023-08-19 20:33:17.055  INFO 9460 --- [restartedMain] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port(s): 8182 (http)
+2023-08-19 20:33:17.055  INFO 9460 --- [restartedMain] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2023-08-19 20:33:17.055  INFO 9460 --- [restartedMain] org.apache.catalina.core.StandardEngine  : Starting Servlet engine: [Apache Tomcat/9.0.36]
+2023-08-19 20:33:17.080  INFO 9460 --- [restartedMain] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+2023-08-19 20:33:17.081  INFO 9460 --- [restartedMain] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 332 ms
+2023-08-19 20:33:17.120  INFO 9460 --- [restartedMain] o.s.s.concurrent.ThreadPoolTaskExecutor  : Initializing ExecutorService 'applicationTaskExecutor'
+2023-08-19 20:33:17.168  INFO 9460 --- [restartedMain] o.s.b.d.a.OptionalLiveReloadServer       : LiveReload server is running on port 35729
+2023-08-19 20:33:17.177  INFO 9460 --- [restartedMain] o.s.s.c.ThreadPoolTaskScheduler          : Initializing ExecutorService 'taskScheduler'
+2023-08-19 20:33:17.194  INFO 9460 --- [restartedMain] o.s.i.endpoint.EventDrivenConsumer       : Adding {logging-channel-adapter:_org.springframework.integration.errorLogger} as a subscriber to the 'errorChannel' channel
+2023-08-19 20:33:17.194  INFO 9460 --- [restartedMain] o.s.i.channel.PublishSubscribeChannel    : Channel 'application.errorChannel' has 1 subscriber(s).
+2023-08-19 20:33:17.194  INFO 9460 --- [restartedMain] o.s.i.endpoint.EventDrivenConsumer       : started bean '_org.springframework.integration.errorLogger'
+2023-08-19 20:33:17.200  INFO 9460 --- [restartedMain] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port(s): 8182 (http) with context path ''
+2023-08-19 20:33:17.205  INFO 9460 --- [restartedMain] c.b.SpringbootDockerDemoApplication      : Started SpringbootDockerDemoApplication in 0.491 seconds (JVM running for 116.811)
+2023-08-19 20:33:17.206  INFO 9460 --- [restartedMain] .ConditionEvaluationDeltaLoggingListener : Condition evaluation delta:
+
+
+==========================
+CONDITION EVALUATION DELTA
+==========================
+
+
+Positive matches:
+-----------------
+
+    None
+
+
+Negative matches:
+-----------------
+
+   TaskSchedulingAutoConfiguration#taskScheduler:
+      Did not match:
+         - @ConditionalOnBean (names: org.springframework.context.annotation.internalScheduledAnnotationProcessor; SearchStrategy: all) did not find any beans named org.springframework.context.annotation.internalScheduledAnnotationProcessor (OnBeanCondition)
+
+
+Exclusions:
+-----------
+
+    None
+
+
+Unconditional classes:
+----------------------
+
+    None
+
+
+
+2023-08-19 20:33:19.011  INFO 9460 --- [Thread-683] o.s.i.endpoint.EventDrivenConsumer       : Removing {logging-channel-adapter:_org.springframework.integration.errorLogger} as a subscriber to the 'errorChannel' channel
+2023-08-19 20:33:19.011  INFO 9460 --- [Thread-683] o.s.i.channel.PublishSubscribeChannel    : Channel 'application.errorChannel' has 0 subscriber(s).
+2023-08-19 20:33:19.011  INFO 9460 --- [Thread-683] o.s.i.endpoint.EventDrivenConsumer       : stopped bean '_org.springframework.integration.errorLogger'
+2023-08-19 20:33:19.011  INFO 9460 --- [Thread-683] o.s.s.c.ThreadPoolTaskScheduler          : Shutting down ExecutorService 'taskScheduler'
+2023-08-19 20:33:19.011  INFO 9460 --- [Thread-683] o.s.s.concurrent.ThreadPoolTaskExecutor  : Shutting down ExecutorService 'applicationTaskExecutor'
+2023-08-19 20:33:19.054  INFO 9460 --- [restartedMain] c.b.SpringbootDockerDemoApplication      : Starting SpringbootDockerDemoApplication on LAPTOP-V9O67UUN with PID 9460 (E:\projects\me\springboot\springboot-docker-demo\target\classes started by PC in E:\projects\me\springboot\springboot-docker-demo)
+2023-08-19 20:33:19.054  INFO 9460 --- [restartedMain] c.b.SpringbootDockerDemoApplication      : No active profile set, falling back to default profiles: default
+2023-08-19 20:33:19.253  INFO 9460 --- [restartedMain] faultConfiguringBeanFactoryPostProcessor : No bean named 'errorChannel' has been explicitly defined. Therefore, a default PublishSubscribeChannel will be created.
+2023-08-19 20:33:19.255  INFO 9460 --- [restartedMain] faultConfiguringBeanFactoryPostProcessor : No bean named 'integrationHeaderChannelRegistry' has been explicitly defined. Therefore, a default DefaultHeaderChannelRegistry will be created.
+2023-08-19 20:33:19.259  INFO 9460 --- [restartedMain] trationDelegate$BeanPostProcessorChecker : Bean 'org.springframework.integration.config.IntegrationManagementConfiguration' of type [org.springframework.integration.config.IntegrationManagementConfiguration] is not eligible for getting processed by all BeanPostProcessors (for example: not eligible for auto-proxying)
+2023-08-19 20:33:19.262  INFO 9460 --- [restartedMain] trationDelegate$BeanPostProcessorChecker : Bean 'integrationChannelResolver' of type [org.springframework.integration.support.channel.BeanFactoryChannelResolver] is not eligible for getting processed by all BeanPostProcessors (for example: not eligible for auto-proxying)
+2023-08-19 20:33:19.262  INFO 9460 --- [restartedMain] trationDelegate$BeanPostProcessorChecker : Bean 'integrationDisposableAutoCreatedBeans' of type [org.springframework.integration.config.annotation.Disposables] is not eligible for getting processed by all BeanPostProcessors (for example: not eligible for auto-proxying)
+2023-08-19 20:33:19.309  INFO 9460 --- [restartedMain] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port(s): 8182 (http)
+2023-08-19 20:33:19.309  INFO 9460 --- [restartedMain] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2023-08-19 20:33:19.310  INFO 9460 --- [restartedMain] org.apache.catalina.core.StandardEngine  : Starting Servlet engine: [Apache Tomcat/9.0.36]
+2023-08-19 20:33:19.344  INFO 9460 --- [restartedMain] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+2023-08-19 20:33:19.344  INFO 9460 --- [restartedMain] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 288 ms
+2023-08-19 20:33:19.430  INFO 9460 --- [restartedMain] o.s.s.concurrent.ThreadPoolTaskExecutor  : Initializing ExecutorService 'applicationTaskExecutor'
+2023-08-19 20:33:19.491  INFO 9460 --- [restartedMain] o.s.s.c.ThreadPoolTaskScheduler          : Initializing ExecutorService 'taskScheduler'
+2023-08-19 20:33:19.507  INFO 9460 --- [restartedMain] o.s.b.d.a.OptionalLiveReloadServer       : LiveReload server is running on port 35729
+2023-08-19 20:33:19.545  INFO 9460 --- [restartedMain] o.s.i.endpoint.EventDrivenConsumer       : Adding {logging-channel-adapter:_org.springframework.integration.errorLogger} as a subscriber to the 'errorChannel' channel
+2023-08-19 20:33:19.545  INFO 9460 --- [restartedMain] o.s.i.channel.PublishSubscribeChannel    : Channel 'application.errorChannel' has 1 subscriber(s).
+2023-08-19 20:33:19.546  INFO 9460 --- [restartedMain] o.s.i.endpoint.EventDrivenConsumer       : started bean '_org.springframework.integration.errorLogger'
+2023-08-19 20:33:19.556  INFO 9460 --- [restartedMain] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port(s): 8182 (http) with context path ''
+2023-08-19 20:33:19.559  INFO 9460 --- [restartedMain] c.b.SpringbootDockerDemoApplication      : Started SpringbootDockerDemoApplication in 0.517 seconds (JVM running for 119.164)
+2023-08-19 20:33:19.559  INFO 9460 --- [scheduling-1] c.b.s.ScheduledTasks                     : Cron Task :: Execution Time - 20:33:19
+2023-08-19 20:33:19.560  INFO 9460 --- [restartedMain] .ConditionEvaluationDeltaLoggingListener : Condition evaluation delta:
+
+
+==========================
+CONDITION EVALUATION DELTA
+==========================
+
+
+Positive matches:
+-----------------
+
+   TaskSchedulingAutoConfiguration#taskScheduler matched:
+      - @ConditionalOnBean (names: org.springframework.context.annotation.internalScheduledAnnotationProcessor; SearchStrategy: all) found bean 'org.springframework.context.annotation.internalScheduledAnnotationProcessor'; @ConditionalOnMissingBean (types: org.springframework.scheduling.annotation.SchedulingConfigurer,org.springframework.scheduling.TaskScheduler,java.util.concurrent.ScheduledExecutorService; SearchStrategy: all) did not find any beans (OnBeanCondition)
+
+
+Negative matches:
+-----------------
+
+    None
+
+
+Exclusions:
+-----------
+
+    None
+
+
+Unconditional classes:
+----------------------
+
+    None
+
+
+
+2023-08-19 20:34:14.996  INFO 9460 --- [SpringContextShutdownHook] o.s.i.endpoint.EventDrivenConsumer       : Removing {logging-channel-adapter:_org.springframework.integration.errorLogger} as a subscriber to the 'errorChannel' channel
+2023-08-19 20:34:14.996  INFO 9460 --- [SpringContextShutdownHook] o.s.i.channel.PublishSubscribeChannel    : Channel 'application.errorChannel' has 0 subscriber(s).
+2023-08-19 20:34:14.996  INFO 9460 --- [SpringContextShutdownHook] o.s.i.endpoint.EventDrivenConsumer       : stopped bean '_org.springframework.integration.errorLogger'
+2023-08-19 20:34:14.996  INFO 9460 --- [SpringContextShutdownHook] o.s.s.c.ThreadPoolTaskScheduler          : Shutting down ExecutorService 'taskScheduler'
+2023-08-19 20:34:14.996  INFO 9460 --- [SpringContextShutdownHook] o.s.s.concurrent.ThreadPoolTaskExecutor  : Shutting down ExecutorService 'applicationTaskExecutor'
+2023-08-19 20:34:17.441  INFO 26144 --- [restartedMain] c.b.SpringbootDockerDemoApplication      : Starting SpringbootDockerDemoApplication on LAPTOP-V9O67UUN with PID 26144 (E:\projects\me\springboot\springboot-docker-demo\target\classes started by PC in E:\projects\me\springboot\springboot-docker-demo)
+2023-08-19 20:34:17.443  INFO 26144 --- [restartedMain] c.b.SpringbootDockerDemoApplication      : No active profile set, falling back to default profiles: default
+2023-08-19 20:34:17.477  INFO 26144 --- [restartedMain] o.s.b.devtools.restart.ChangeableUrls    : The Class-Path manifest attribute in C:\Users\PC\.m2\repository\io\grpc\grpc-netty-shaded\1.13.1\grpc-netty-shaded-1.13.1.jar referenced one or more files that do not exist: file:/C:/Users/PC/.m2/repository/io/grpc/grpc-netty-shaded/1.13.1/grpc-core-1.13.1.jar,file:/C:/Users/PC/.m2/repository/io/grpc/grpc-netty-shaded/1.13.1/grpc-context-1.13.1.jar,file:/C:/Users/PC/.m2/repository/io/grpc/grpc-netty-shaded/1.13.1/gson-2.7.jar,file:/C:/Users/PC/.m2/repository/io/grpc/grpc-netty-shaded/1.13.1/guava-20.0.jar,file:/C:/Users/PC/.m2/repository/io/grpc/grpc-netty-shaded/1.13.1/error_prone_annotations-2.1.2.jar,file:/C:/Users/PC/.m2/repository/io/grpc/grpc-netty-shaded/1.13.1/jsr305-3.0.0.jar,file:/C:/Users/PC/.m2/repository/io/grpc/grpc-netty-shaded/1.13.1/opencensus-contrib-grpc-metrics-0.12.3.jar,file:/C:/Users/PC/.m2/repository/io/grpc/grpc-netty-shaded/1.13.1/opencensus-api-0.12.3.jar
+2023-08-19 20:34:17.478  INFO 26144 --- [restartedMain] .e.DevToolsPropertyDefaultsPostProcessor : Devtools property defaults active! Set 'spring.devtools.add-properties' to 'false' to disable
+2023-08-19 20:34:17.478  INFO 26144 --- [restartedMain] .e.DevToolsPropertyDefaultsPostProcessor : For additional web related logging consider setting the 'logging.level.web' property to 'DEBUG'
+2023-08-19 20:34:18.087  INFO 26144 --- [restartedMain] faultConfiguringBeanFactoryPostProcessor : No bean named 'errorChannel' has been explicitly defined. Therefore, a default PublishSubscribeChannel will be created.
+2023-08-19 20:34:18.094  INFO 26144 --- [restartedMain] faultConfiguringBeanFactoryPostProcessor : No bean named 'integrationHeaderChannelRegistry' has been explicitly defined. Therefore, a default DefaultHeaderChannelRegistry will be created.
+2023-08-19 20:34:18.120  INFO 26144 --- [restartedMain] trationDelegate$BeanPostProcessorChecker : Bean 'org.springframework.integration.config.IntegrationManagementConfiguration' of type [org.springframework.integration.config.IntegrationManagementConfiguration] is not eligible for getting processed by all BeanPostProcessors (for example: not eligible for auto-proxying)
+2023-08-19 20:34:18.128  INFO 26144 --- [restartedMain] trationDelegate$BeanPostProcessorChecker : Bean 'integrationChannelResolver' of type [org.springframework.integration.support.channel.BeanFactoryChannelResolver] is not eligible for getting processed by all BeanPostProcessors (for example: not eligible for auto-proxying)
+2023-08-19 20:34:18.129  INFO 26144 --- [restartedMain] trationDelegate$BeanPostProcessorChecker : Bean 'integrationDisposableAutoCreatedBeans' of type [org.springframework.integration.config.annotation.Disposables] is not eligible for getting processed by all BeanPostProcessors (for example: not eligible for auto-proxying)
+2023-08-19 20:34:18.448  INFO 26144 --- [restartedMain] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port(s): 8182 (http)
+2023-08-19 20:34:18.455  INFO 26144 --- [restartedMain] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2023-08-19 20:34:18.455  INFO 26144 --- [restartedMain] org.apache.catalina.core.StandardEngine  : Starting Servlet engine: [Apache Tomcat/9.0.36]
+2023-08-19 20:34:18.548  INFO 26144 --- [restartedMain] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+2023-08-19 20:34:18.548  INFO 26144 --- [restartedMain] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 1070 ms
+2023-08-19 20:34:18.838  INFO 26144 --- [restartedMain] o.s.s.concurrent.ThreadPoolTaskExecutor  : Initializing ExecutorService 'applicationTaskExecutor'
+2023-08-19 20:34:18.984  INFO 26144 --- [restartedMain] o.s.s.c.ThreadPoolTaskScheduler          : Initializing ExecutorService 'taskScheduler'
+2023-08-19 20:34:19.001  INFO 26144 --- [restartedMain] o.s.b.d.a.OptionalLiveReloadServer       : LiveReload server is running on port 35729
+2023-08-19 20:34:19.082  INFO 26144 --- [restartedMain] o.s.i.endpoint.EventDrivenConsumer       : Adding {logging-channel-adapter:_org.springframework.integration.errorLogger} as a subscriber to the 'errorChannel' channel
+2023-08-19 20:34:19.083  INFO 26144 --- [restartedMain] o.s.i.channel.PublishSubscribeChannel    : Channel 'application.errorChannel' has 1 subscriber(s).
+2023-08-19 20:34:19.083  INFO 26144 --- [restartedMain] o.s.i.endpoint.EventDrivenConsumer       : started bean '_org.springframework.integration.errorLogger'
+2023-08-19 20:34:19.114  INFO 26144 --- [restartedMain] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port(s): 8182 (http) with context path ''
+2023-08-19 20:34:19.124  INFO 26144 --- [restartedMain] c.b.SpringbootDockerDemoApplication      : Started SpringbootDockerDemoApplication in 2.024 seconds (JVM running for 2.481)
+2023-08-19 20:34:19.123  INFO 26144 --- [scheduling-1] c.b.s.ScheduledTasks                     : Cron Task :: Execution Time - 20:34:19
+2023-08-19 20:34:22.265  INFO 26144 --- [SpringContextShutdownHook] o.s.i.endpoint.EventDrivenConsumer       : Removing {logging-channel-adapter:_org.springframework.integration.errorLogger} as a subscriber to the 'errorChannel' channel
+2023-08-19 20:34:22.265  INFO 26144 --- [SpringContextShutdownHook] o.s.i.channel.PublishSubscribeChannel    : Channel 'application.errorChannel' has 0 subscriber(s).
+2023-08-19 20:34:22.265  INFO 26144 --- [SpringContextShutdownHook] o.s.i.endpoint.EventDrivenConsumer       : stopped bean '_org.springframework.integration.errorLogger'
+2023-08-19 20:34:22.266  INFO 26144 --- [SpringContextShutdownHook] o.s.s.c.ThreadPoolTaskScheduler          : Shutting down ExecutorService 'taskScheduler'
+2023-08-19 20:34:22.266  INFO 26144 --- [SpringContextShutdownHook] o.s.s.concurrent.ThreadPoolTaskExecutor  : Shutting down ExecutorService 'applicationTaskExecutor'

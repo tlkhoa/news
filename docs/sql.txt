@@ -1,0 +1,110 @@
+-- ============================================================
+-- PostgreSQL schema check commands (cho dự án VietnamNewsTrendAnalyzer)
+-- Schema duoc tao boi EF Core + Npgsql (ung dung .NET), ten bang/cot
+-- duoc trinh dang (quoted identifiers) va luu hoa nguyen chu hoa.
+-- ============================================================
+
+-- 1. Liet ke tat ca bang trong schema public
+SELECT table_name
+FROM information_schema.tables
+WHERE table_schema = 'public'
+ORDER BY table_name;
+
+-- 2. Xem chi tiet cac cot cua bang Articles, Sources, Categories
+SELECT table_name, column_name, data_type, is_nullable, column_default
+FROM information_schema.columns
+WHERE table_schema = 'public'
+  AND table_name IN ('Articles', 'Sources', 'Categories')
+ORDER BY table_name, ordinal_position;
+
+-- 3. Kiem tra rang khoa chinh, khoa ngoai cua bang Articles
+SELECT
+    tc.constraint_name,
+    tc.constraint_type,
+    kcu.column_name,
+    ccu.table_name AS foreign_table_name,
+    ccu.column_name AS foreign_column_name
+FROM information_schema.table_constraints tc
+JOIN information_schema.key_column_usage kcu
+    ON tc.constraint_name = kcu.constraint_name
+   AND tc.table_schema = kcu.table_schema
+LEFT JOIN information_schema.referential_constraints rc
+    ON tc.constraint_name = rc.constraint_name
+LEFT JOIN information_schema.constraint_column_usage ccu
+    ON rc.unique_constraint_name = ccu.constraint_name
+   AND rc.constraint_schema = ccu.constraint_schema
+WHERE tc.table_schema = 'public'
+  AND tc.table_name = 'Articles'
+ORDER BY tc.constraint_type, tc.constraint_name, kcu.ordinal_position;
+
+-- 4. Kiem tra index co san
+SELECT
+    schemaname,
+    tablename,
+    indexname,
+    indexdef
+FROM pg_indexes
+WHERE schemaname = 'public'
+ORDER BY tablename, indexname;
+
+-- 5. Dem so bai viet theo ngay ( PublishedAt )
+SELECT CAST("PublishedAt" AS DATE) AS ngay, COUNT(*) AS so_bai
+FROM "Articles"
+GROUP BY CAST("PublishedAt" AS DATE)
+ORDER BY ngay DESC;
+
+-- 6. Liet ke cac nguon tin (Sources) da bat
+SELECT "Id", "Name", "FeedUrl", "Enabled", "FullTextAllowed", "SourceWeight"
+FROM "Sources"
+WHERE "Enabled" = true
+ORDER BY "Name";
+
+-- 7. Liet ke cac danh muc (Categories)
+SELECT "Id", "Name"
+FROM "Categories"
+ORDER BY "Name";
+
+-- 8. Lay chi tiet 1 bai viet theo Id (bao nhieu cot)
+SELECT a."Id", a."SourceId", s."Name" AS sourcename, a."CategoryId", c."Name" AS categoryname,
+       a."EventId", a."Title", a."Url", a."Description", a."Content", a."Author", a."ImageUrl",
+       a."PublishedAt", a."CollectedAt", a."ViewCount", a."PopularityScore",
+       a."IsFullTextStored", a."ContentFetchedAt"
+FROM "Articles" a
+LEFT JOIN "Sources" s ON a."SourceId" = s."Id"
+LEFT JOIN "Categories" c ON a."CategoryId" = c."Id"
+WHERE a."Id" = 1;
+
+-- 9. Kiem tra URL trung lap (rang buoc UNIQUE tren cot Url)
+SELECT "Url", COUNT(*) AS so_lan
+FROM "Articles"
+GROUP BY "Url"
+HAVING COUNT(*) > 1;
+
+-- 10. Cau lenh chen bai moi neu chua co URL (ON CONFLICT DO NOTHING)
+INSERT INTO "Articles"
+    ("SourceId", "Title", "Url", "Description", "Content", "ImageUrl",
+     "PublishedAt", "CollectedAt", "PopularityScore", "IsFullTextStored")
+VALUES (1, 'Tieu de bai viet', 'https://example.com/tin-1', 'Mo ta ngut gon',
+        'Noi dung bai viet', 'https://example.com/anh.jpg',
+        '2026-11-09 08:00:00+07', now(), 0, false)
+ON CONFLICT ("Url") DO NOTHING;
+
+-- 11. Kiem tra trang thai lazy-load content (bai co/ chua co toan van)
+SELECT "Id", "Title",
+       CASE WHEN "Content" IS NOT NULL AND "ContentFetchedAt" IS NOT NULL
+            THEN 'DA CO NOI DUNG' ELSE 'CHUA CO NOI DUNG' END AS trang_thai,
+       "ContentFetchedAt",
+       length("Content") AS do_dai_noi_dung
+FROM "Articles"
+ORDER BY "ContentFetchedAt" DESC NULLS LAST, "Id";
+
+-- 12. Liet ke cac bai chua co toan van can fetch (giai quyet lazy-load)
+SELECT "Id", "Title", "Url"
+FROM "Articles"
+WHERE "Content" IS NULL OR "ContentFetchedAt" IS NULL
+ORDER BY "PublishedAt" DESC;
+
+-- ============================================================
+-- Cach chay: psql -U <user> -d <db> -f docs/sql.txt
+-- Hoac copy tung dong vao pgAdmin / psql console.
+-- ============================================================

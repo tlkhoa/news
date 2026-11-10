@@ -1,0 +1,107 @@
+-- FUNCTION: public.get_rate_success_bu_app_and_minutes(text, integer)
+
+-- DROP FUNCTION IF EXISTS public.get_rate_success_bu_app_and_minutes(text, integer);
+
+CREATE OR REPLACE FUNCTION public.get_rate_success_bu_app_and_minutes(
+	p_appid text,
+	p_minutes integer)
+    RETURNS numeric
+    LANGUAGE 'plpgsql'
+    COST 100
+    VOLATILE PARALLEL UNSAFE
+AS $BODY$
+DECLARE
+    success_count NUMERIC(10, 2);
+	fail_count NUMERIC(10, 2);
+	success_rate NUMERIC(10, 2);
+
+	today_dd TEXT;
+	table_name TEXT := 'tbl4_';
+    sql_text TEXT;	
+BEGIN
+    -- Lấy ngày hiện tại dạng 2 chữ số (ví dụ: '08', '10')
+    today_dd := TO_CHAR(current_date, 'DD');
+
+    -- Ghép với 'tbl4_' để tạo tên bảng
+    table_name := 'tbl6_' || today_dd;
+
+   IF p_appId= 'com.appmusicdownloader.fdownloadmusicfree2' THEN
+      SELECT COUNT(*)
+        INTO success_count
+        FROM events_com_appmusicdownloader_fdownloadmusicfree21
+       WHERE event_name = 'gls'
+         AND create_datetime AT TIME ZONE 'UTC' >= NOW() - (p_minutes || ' minutes')::INTERVAL;
+      SELECT COUNT(*)
+        INTO fail_count
+        FROM events_com_appmusicdownloader_fdownloadmusicfree21
+       WHERE event_name = 'glf'
+         AND create_datetime AT TIME ZONE 'UTC'>= NOW() - (p_minutes || ' minutes')::INTERVAL;		 
+   END IF;
+
+   IF p_appId= 'com.downloadvideo.videodownloadfree21' THEN
+      SELECT COUNT(*)
+        INTO success_count
+		FROM (SELECT event_name, VALUE, create_datetime
+                FROM events_com_downloadvideo_videodownloadfree211
+               WHERE event_name = 'gls'
+                 AND create_datetime >= NOW() - (90 || ' minutes')::INTERVAL ) tbl
+	   WHERE is_youtube1(event_name, REPLACE(value::text, '\u0000', '')::json->>'s')=1
+         AND create_datetime AT TIME ZONE 'UTC' >= NOW() - (p_minutes || ' minutes')::INTERVAL;
+      SELECT COUNT(*)
+        INTO fail_count
+	    FROM (SELECT event_name, VALUE, create_datetime		
+                FROM events_com_downloadvideo_videodownloadfree211
+               WHERE event_name = 'glf'
+                 AND create_datetime >= NOW() - (90 || ' minutes')::INTERVAL) tbl
+		WHERE is_youtube1(event_name, REPLACE(value::text, '\u0000', '')::json->>'s')=1
+         AND create_datetime AT TIME ZONE 'UTC' >= NOW() - (p_minutes || ' minutes')::INTERVAL;
+   END IF;
+
+   IF p_appId= 'com.dlmsapp.v4appprofree' THEN
+    sql_text := format('
+        SELECT COUNT(*)
+        FROM %I
+        WHERE event_name = ''gls''
+          AND is_youtube1(event_name, REPLACE(value::text, ''\u0000'', '''')::json->>''s'') = 1
+          AND create_datetime >= NOW() - ($1::TEXT || '' minutes'')::INTERVAL
+    ', table_name);
+
+    EXECUTE sql_text USING p_minutes INTO success_count;
+	
+    sql_text := format('
+	   SELECT COUNT(*)
+        FROM %I
+       WHERE event_name = ''glf''
+	     AND is_youtube1(event_name, REPLACE(value::text, ''\u0000'', '''')::json->>''s'')=1
+         AND create_datetime >= NOW() - ($1::TEXT || '' minutes'')::INTERVAL
+     ', table_name);
+	 EXECUTE sql_text USING p_minutes INTO fail_count;
+   END IF;
+
+     IF p_appId= 'com.musicdownloader.mp3downloadmusic.musicdownloadfree' THEN
+      SELECT COUNT(*)
+        INTO success_count
+        FROM events_com_musicdownloader_mp3downloadmusic_musicdownloadfree1
+       WHERE event_name = 'gls'
+	     AND is_youtube1(event_name, REPLACE(value::text, '\u0000', '')::json->>'s')=1
+         AND create_datetime  >= NOW() - (p_minutes || ' minutes')::INTERVAL;
+      SELECT COUNT(*)
+        INTO fail_count
+        FROM events_com_musicdownloader_mp3downloadmusic_musicdownloadfree1
+       WHERE event_name = 'glf'
+	     AND is_youtube1(event_name, REPLACE(value::text, '\u0000', '')::json->>'s')=1
+         AND create_datetime >= NOW() - (p_minutes || ' minutes')::INTERVAL;		 
+   END IF;   
+
+   IF (success_count + fail_count) > 0 THEN
+      success_rate := (success_count / (success_count + fail_count )) * 100;
+   ELSE
+      success_rate := 0; -- Tránh chia cho 0
+   END IF;
+   -- success_rate:= 99.9;
+   RETURN success_rate;-- success_rate::DOUBLE PRECISION;
+END;
+$BODY$;
+
+ALTER FUNCTION public.get_rate_success_bu_app_and_minutes(text, integer)
+    OWNER TO postgres;
