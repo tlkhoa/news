@@ -102,6 +102,13 @@ public class NewsController {
         model.addAttribute("pageTitle", article.getTitle());
         model.addAttribute("article", article);
         model.addAttribute("today", LocalDate.now(ZoneId.of("Asia/Saigon")));
+        // Giữ lại bộ lọc chuyên mục / ngày khi quay lại danh sách
+        if (article.getCategoryId() != null) {
+            model.addAttribute("categoryId", article.getCategoryId());
+        }
+        model.addAttribute("date", article.getPublishedAt() != null
+                ? article.getPublishedAt().toLocalDate()
+                : LocalDate.now(ZoneId.of("Asia/Saigon")));
         return "detail";
     }
 

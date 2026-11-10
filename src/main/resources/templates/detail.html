@@ -22,7 +22,8 @@
     <th:block th:replace="~{fragments :: messages}"></th:block>
 
     <article class="detail">
-        <a class="detail-back" th:href="@{/news}">← Quay lại danh sách</a>
+        <a class="detail-back" th:href="@{/news(categoryId=${categoryId}, date=${date})}" th:if="${categoryId != null}">← Quay lại danh sách</a>
+        <a class="detail-back" th:href="@{/news(date=${date})}" th:if="${categoryId == null}">← Quay lại danh sách</a>
 
         <h1 class="detail-title" th:text="${article.title}">Tiêu đề bài viết</h1>
 
@@ -51,7 +52,8 @@
 
         <div class="detail-actions">
             <a class="btn btn-primary" th:href="${article.url}" target="_blank" rel="noopener noreferrer">🔗 Mở website gốc</a>
-            <a class="btn btn-outline" th:href="@{/news}">← Danh sách tin</a>
+            <a class="btn btn-outline" th:href="@{/news(categoryId=${categoryId}, date=${date})}" th:if="${categoryId != null}">← Danh sách tin</a>
+            <a class="btn btn-outline" th:href="@{/news(date=${date})}" th:if="${categoryId == null}">← Danh sách tin</a>
         </div>
 
         <p class="small" style="margin-top:24px;color:var(--color-text-muted);border-top:1px solid var(--color-border);padding-top:12px;">
