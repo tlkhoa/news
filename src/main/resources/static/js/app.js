@@ -110,4 +110,13 @@
             scrollToLastRead();
         }
     });
+
+    // Trang chi tiết: không hiển thị ảnh đại diện (.detail-image) ở trên cùng,
+    // chỉ giữ các ảnh bên trong nội dung bài viết (.detail-content).
+    document.addEventListener('DOMContentLoaded', function () {
+        var detailImage = document.querySelector('.detail-image');
+        if (detailImage) {
+            detailImage.style.display = 'none';
+        }
+    });
 })();
