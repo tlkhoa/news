@@ -39,6 +39,13 @@
         <img class="detail-image" th:src="${article.imageUrl}" th:alt="${article.title}"
              th:if="${article.imageUrl}" onerror="this.remove()"/>
 
+        <div class="tts-controls">
+            <button id="tts-play" class="btn btn-sm btn-primary">🔊 Nghe bài</button>
+            <button id="tts-pause" class="btn btn-sm btn-outline" disabled>⏸ Tạm dừng</button>
+            <button id="tts-stop" class="btn btn-sm btn-outline" disabled>⏹ Dừng</button>
+            <span id="tts-status" class="tts-status"></span>
+        </div>
+
         <div class="detail-content" th:if="${article.content != null}" th:utext="${article.content}">
             <p>Nội dung bài viết sẽ hiển thị ở đây.</p>
         </div>

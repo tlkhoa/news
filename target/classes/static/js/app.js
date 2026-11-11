@@ -119,4 +119,422 @@
             detailImage.style.display = 'none';
         }
     });
+
+    // ---------- TTS (Text-to-Speech) miễn phí bằng Web Speech API ----------
+    (function initTTS() {
+        if (!window.speechSynthesis) {
+            console.log('[TTS] window.speechSynthesis không tồn tại trên trình duyệt này.');
+            return;
+        }
+        var synth = window.speechSynthesis;
+
+        var playBtn = document.getElementById('tts-play');
+        var pauseBtn = document.getElementById('tts-pause');
+        var stopBtn = document.getElementById('tts-stop');
+        var statusEl = document.getElementById('tts-status');
+        var contentEl = document.querySelector('.detail-content');
+
+        console.log('[TTS] init: playBtn=', !!playBtn, '| pauseBtn=', !!pauseBtn, '| stopBtn=', !!stopBtn, '| statusEl=', !!statusEl, '| contentEl=', !!contentEl);
+
+        if (!playBtn || !contentEl) {
+            console.log('[TTS] Thiếu nút điều khiển hoặc .detail-content, bỏ qua init TTS.');
+            return;
+        }
+
+        console.log('[TTS] contentEl tagName=', contentEl.tagName, '| innerText length=', (contentEl.innerText || '').length);
+
+        var utterance = null;
+        var isPaused = false;
+        var voicesReady = false;
+        var currentMark = null;
+        var segments = [];
+        var currentSegmentIdx = -1;
+        var boundaryTimer = null;
+        var isManuallyStopped = false;
+
+        // Xóa highlight cũ (chỉ để 1 đoạn đang đọc được highlight tại một thời điểm).
+        function clearHighlight() {
+            try {
+                if (currentMark) {
+                    var parent = currentMark.parentNode;
+                    if (parent) {
+                        parent.replaceChild(document.createTextNode(currentMark.textContent), currentMark);
+                        parent.normalize();
+                    }
+                    currentMark = null;
+                }
+            } catch (e) {
+                console.error('[TTS] clearHighlight error:', e);
+            }
+        }
+
+        // Highlight node text chứa absoluteCharIndex trong full text (chỉ 1 mark tại 1 thời điểm).
+        function highlightAbsoluteCharIndex(absIndex) {
+            if (!contentEl) return;
+            try {
+                var index = 0;
+                var walker = document.createTreeWalker(contentEl, NodeFilter.SHOW_TEXT, null, false);
+                var node;
+                var foundNode = null;
+
+                while ((node = walker.nextNode())) {
+                    var len = (node.nodeValue || '').length;
+                    if (absIndex >= index && absIndex <= index + len) {
+                        foundNode = node;
+                        break;
+                    }
+                    index += len;
+                }
+
+                if (!foundNode) return;
+
+                // Nếu vẫn cùng node, không cần làm lại (tránh lặp highlight).
+                if (currentMark && currentMark.textContent === foundNode.nodeValue) return;
+
+                clearHighlight();
+
+                var mark = document.createElement('mark');
+                mark.className = 'tts-speaking';
+                mark.textContent = foundNode.nodeValue;
+                foundNode.parentNode.replaceChild(mark, foundNode);
+                currentMark = mark;
+
+                console.log('[TTS] highlighting absIndex=', absIndex, 'text=', mark.textContent.substring(0, 40));
+
+                // Dùng setTimeout 0 để không block luồng TTS trên Android.
+                setTimeout(function () {
+                    try { mark.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) {}
+                }, 0);
+            } catch (e) {
+                console.error('[TTS] highlightAbsoluteCharIndex error:', e);
+            }
+        }
+
+        // Tách văn bản thành các câu theo dấu câu (. ! ? ...)
+        function splitSentences(text) {
+            var result = [];
+            var current = '';
+            for (var i = 0; i < text.length; i++) {
+                current += text[i];
+                if ('.!?'.indexOf(text[i]) !== -1) {
+                    if (i + 1 >= text.length || text[i + 1] === ' ' || text[i + 1] === '\n' || text[i + 1] === '\r') {
+                        result.push(current);
+                        current = '';
+                        while (i + 1 < text.length && (text[i + 1] === ' ' || text[i + 1] === '\n' || text[i + 1] === '\r')) i++;
+                    }
+                }
+            }
+            if (current.trim()) result.push(current);
+            return result;
+        }
+
+        // Chia nội dung theo thẻ <p>, mỗi <p> tách thêm theo câu.
+        // Mỗi câu là một segment với startIndex trong full text (dùng để highlight).
+        function splitIntoParagraphSegments(contentEl) {
+            var segments = [];
+            var paragraphs = contentEl.querySelectorAll('p');
+            var globalIndex = 0;
+
+            if (paragraphs.length > 0) {
+                paragraphs.forEach(function (p) {
+                    var pText = p.innerText || p.textContent || '';
+                    if (!pText.trim()) {
+                        globalIndex += 1;
+                        return;
+                    }
+                    var sentences = splitSentences(pText);
+                    sentences.forEach(function (s) {
+                        var sTrim = s.trim();
+                        if (sTrim) {
+                            segments.push({
+                                text: sTrim,
+                                startIndex: globalIndex,
+                                endIndex: globalIndex + sTrim.length
+                            });
+                            globalIndex += sTrim.length + 1; // +1 khoảng trắng giữa các câu
+                        }
+                    });
+                    globalIndex += 1; // khoảng cách giữa các đoạn <p>
+                });
+            }
+
+            // Nếu không có thẻ p, fallback lấy toàn bộ text và tách câu.
+            if (segments.length === 0) {
+                var fullText = contentEl.innerText || contentEl.textContent || '';
+                var sentences = splitSentences(fullText);
+                var idx = 0;
+                sentences.forEach(function (s) {
+                    var sTrim = s.trim();
+                    if (sTrim) {
+                        segments.push({
+                            text: sTrim,
+                            startIndex: idx,
+                            endIndex: idx + sTrim.length
+                        });
+                        idx += sTrim.length + 1;
+                    }
+                });
+            }
+
+            return segments;
+        }
+
+        function setStatus(msg) {
+            if (statusEl) statusEl.textContent = msg;
+            console.log('[TTS] status:', msg);
+        }
+
+        function resetButtons() {
+            playBtn.textContent = '🔊 Nghe bài';
+            playBtn.disabled = false;
+            pauseBtn.disabled = true;
+            stopBtn.disabled = true;
+            isPaused = false;
+            console.log('[TTS] buttons reset.');
+        }
+
+        // Chọn giọng tiếng Việt nếu có.
+        function pickVoice(utt) {
+            try {
+                var voices = synth.getVoices() || [];
+                console.log('[TTS] pickVoice: available voices count=', voices.length);
+                voices.forEach(function (v, i) {
+                    console.log('[TTS]   voice[' + i + ']: name=', v.name, '| lang=', v.lang, '| default=', v.default);
+                });
+                var viVoice = voices.find(function (v) {
+                    return /^vi/i.test(v.lang) || /vietnamese/i.test(v.name);
+                });
+                if (viVoice) {
+                    utt.voice = viVoice;
+                    console.log('[TTS] pickVoice: selected Vietnamese voice=', viVoice.name, '| lang=', viVoice.lang);
+                } else if (voices.length > 0) {
+                    utt.lang = 'vi';
+                    console.log('[TTS] pickVoice: no Vietnamese voice, fallback lang=vi');
+                } else {
+                    console.log('[TTS] pickVoice: no voices available yet');
+                }
+            } catch (e) {
+                console.error('[TTS] pickVoice error:', e);
+            }
+        }
+
+        // Chờ giọng TTS được nạp.
+        synth.addEventListener('voiceschanged', function () {
+            voicesReady = true;
+            console.log('[TTS] voiceschanged fired, count=', (synth.getVoices() || []).length);
+        });
+
+        // Đọc 1 câu/đoạn theo chỉ số.
+        function speakSegment(idx) {
+            if (idx >= segments.length) {
+                clearHighlight();
+                resetButtons();
+                setStatus('Đã đọc xong.');
+                return;
+            }
+
+            currentSegmentIdx = idx;
+            var seg = segments[idx];
+            console.log('[TTS] speakSegment idx=', idx, '| startIndex=', seg.startIndex, '| text length=', seg.text.length, '| preview:', seg.text.substring(0, 60));
+
+            clearHighlight();
+
+            utterance = new SpeechSynthesisUtterance(seg.text);
+            pickVoice(utterance);
+            utterance.rate = 1;
+            utterance.pitch = 1;
+            utterance.volume = 1;
+
+            utterance.onstart = function () {
+                console.log('[TTS] onstart fired segment=', idx);
+                playBtn.textContent = '🔊 Đang đọc';
+                playBtn.disabled = true;
+                pauseBtn.disabled = false;
+                stopBtn.disabled = false;
+                setStatus('Đang đọc bài viết (câu ' + (idx + 1) + '/' + segments.length + ')...');
+
+                // Reset boundary timer cho segment mới.
+                if (boundaryTimer) clearTimeout(boundaryTimer);
+                boundaryTimer = setTimeout(function () {
+                    console.log('[TTS] boundary timeout: no onboundary fired for 2000ms, highlight whole segment');
+                    highlightAbsoluteCharIndex(seg.startIndex);
+                }, 2000);
+            };
+
+            // Highlight từng câu khi TTS đang đọc (chỉ 1 mark tại 1 thời điểm).
+            utterance.onboundary = function (event) {
+                console.log('[TTS] onboundary segment=', idx, 'charIndex=', event.charIndex, 'type=', event.type);
+                if (boundaryTimer) clearTimeout(boundaryTimer);
+                try { highlightAbsoluteCharIndex(seg.startIndex + event.charIndex); } catch (e) {}
+            };
+
+            utterance.onend = function () {
+                console.log('[TTS] onend fired segment=', idx, '| isManuallyStopped=', isManuallyStopped);
+                if (boundaryTimer) clearTimeout(boundaryTimer);
+                clearHighlight();
+                // Nếu người dùng đã nhấn Dừng, không tự động đọc câu tiếp theo.
+                if (isManuallyStopped) return;
+                // Tự động chuyển sang câu tiếp theo.
+                speakSegment(idx + 1);
+            };
+
+            utterance.onerror = function (event) {
+                console.error('[TTS] onerror fired segment=', idx, ':', event.error, event, '| isManuallyStopped=', isManuallyStopped);
+                if (boundaryTimer) clearTimeout(boundaryTimer);
+                clearHighlight();
+
+                // Nếu người dùng đã nhấn Dừng, không tự động đọc câu tiếp theo.
+                if (isManuallyStopped) return;
+
+                if (event.error === 'synthesis-failed') {
+                    // Thử lại với lang khác nếu chưa thử đủ
+                    var langs = ['vi', 'vi-VN', ''];
+                    var currentLangIdx = langs.indexOf(utterance.lang);
+                    var nextLang = (currentLangIdx >= 0 && currentLangIdx < langs.length - 1) ? langs[currentLangIdx + 1] : null;
+
+                    if (nextLang !== null) {
+                        console.log('[TTS] synthesis-failed segment=', idx, 'retrying with lang=', nextLang);
+                        var retryUtt = new SpeechSynthesisUtterance(seg.text);
+                        retryUtt.lang = nextLang;
+                        retryUtt.rate = 1;
+                        retryUtt.pitch = 1;
+                        retryUtt.volume = 1;
+                        retryUtt.onstart = function () {
+                            console.log('[TTS] retry onstart fired lang=', nextLang);
+                            playBtn.textContent = '🔊 Đang đọc';
+                            playBtn.disabled = true;
+                            pauseBtn.disabled = false;
+                            stopBtn.disabled = false;
+                            setStatus('Đang đọc bài viết (câu ' + (idx + 1) + '/' + segments.length + ')...');
+                        };
+                        retryUtt.onboundary = function (event) {
+                            if (boundaryTimer) clearTimeout(boundaryTimer);
+                            try { highlightAbsoluteCharIndex(seg.startIndex + event.charIndex); } catch (e) {}
+                        };
+                        retryUtt.onend = function () {
+                            console.log('[TTS] retry onend fired lang=', nextLang);
+                            clearHighlight();
+                            speakSegment(idx + 1);
+                        };
+                        retryUtt.onerror = function (ev) {
+                            console.error('[TTS] retry onerror fired lang=', nextLang, ':', ev.error);
+                            clearHighlight();
+                            // Bỏ qua lỗi, chuyển sang câu tiếp theo để không bị kẹt.
+                            speakSegment(idx + 1);
+                        };
+                        utterance = retryUtt;
+                        synth.speak(retryUtt);
+                        console.log('[TTS] synth.speak retry called lang=', nextLang);
+                        return;
+                    }
+
+                    setStatus('Thiết bị này chưa hỗ trợ đọc giọng nói (TTS). Hãy bật TTS trong cài đặt hệ thống.');
+                    // Tiếp tục đọc câu sau để không bị kẹt hoàn toàn.
+                    speakSegment(idx + 1);
+                } else {
+                    setStatus('Lỗi khi đọc bài viết: ' + event.error);
+                    speakSegment(idx + 1);
+                }
+            };
+
+            // Nếu voices chưa sẵn sàng, chờ một chút rồi mới speak.
+            if (!voicesReady && (synth.getVoices() || []).length === 0) {
+                console.log('[TTS] voices not ready yet, waiting 500ms before speak segment=', idx);
+                setTimeout(function () {
+                    synth.speak(utterance);
+                    console.log('[TTS] synth.speak called segment=', idx);
+                }, 500);
+            } else {
+                synth.speak(utterance);
+                console.log('[TTS] synth.speak called segment=', idx);
+            }
+        }
+
+        playBtn.addEventListener('click', function () {
+            try {
+                console.log('[TTS] play clicked');
+                console.log('[TTS] synth state - speaking:', synth.speaking, '| pending:', synth.pending, '| paused:', synth.paused);
+
+                // Reset flag dừng thủ công khi bắt đầu đọc mới.
+                isManuallyStopped = false;
+
+                // Tiếp tục sau khi tạm dừng (hoặc sau khi Dừng): luôn khởi tạo utterance mới
+                // từ câu hiện tại, vì synth.resume() trên Android Chrome rất unreliable.
+                if (isPaused && currentSegmentIdx >= 0) {
+                    console.log('[TTS] resuming from paused segment', currentSegmentIdx);
+                    isPaused = false;
+                    synth.cancel();
+                    speakSegment(currentSegmentIdx);
+                    return;
+                }
+
+                // Nếu đã chia segments và đang dừng ở câu nào đó (sau khi nhấn Dừng), tiếp tục từ câu đó
+                if (!isPaused && segments.length > 0 && currentSegmentIdx >= 0) {
+                    console.log('[TTS] resuming from stopped segment', currentSegmentIdx);
+                    speakSegment(currentSegmentIdx);
+                    return;
+                }
+
+                // Chỉ cancel khi thực sự có utterance đang chạy
+                if (synth.speaking || synth.pending) {
+                    console.log('[TTS] canceling existing speech before new speak');
+                    synth.cancel();
+                }
+
+                clearHighlight();
+
+                // Chia nội dung theo <p> và câu nếu chưa có.
+                if (segments.length === 0) {
+                    console.log('[TTS] splitting content into paragraphs and sentences...');
+                    segments = splitIntoParagraphSegments(contentEl);
+                    console.log('[TTS] split into', segments.length, 'segments (câu/đoạn)');
+                }
+
+                if (segments.length === 0) {
+                    setStatus('Không có nội dung để đọc.');
+                    return;
+                }
+
+                currentSegmentIdx = 0;
+                speakSegment(0);
+            } catch (e) {
+                console.error('[TTS] play click error:', e);
+                clearHighlight();
+                resetButtons();
+                setStatus('Trình duyệt không hỗ trợ đọc bài viết.');
+            }
+        });
+
+        pauseBtn.addEventListener('click', function () {
+            try {
+                console.log('[TTS] pause clicked');
+                if (synth.speaking && !synth.paused) {
+                    synth.pause();
+                    isPaused = true;
+                    playBtn.textContent = '▶ Tiếp tục';
+                    playBtn.disabled = false;
+                    setStatus('Đã tạm dừng.');
+                }
+            } catch (e) {
+                console.error('[TTS] pause click error:', e);
+            }
+        });
+
+        stopBtn.addEventListener('click', function () {
+            try {
+                console.log('[TTS] stop clicked');
+                synth.cancel();
+                clearHighlight();
+                resetButtons();
+                // Xóa hết để lần sau nhấn Nghe bài sẽ đọc lại từ đầu.
+                segments = [];
+                currentSegmentIdx = -1;
+                isManuallyStopped = false;
+                utterance = null;
+                setStatus('Đã dừng.');
+            } catch (e) {
+                console.error('[TTS] stop click error:', e);
+            }
+        });
+    })();
 })();
