@@ -283,6 +283,11 @@ img { max-width: 100%; height: auto; display: block; }
     color: #64748b;
     border-color: #cbd5e1;
 }
+.article-card.is-read .is-read-badge {
+    background: #e2e8f0;
+    color: #64748b;
+    border-color: #cbd5e1;
+}
 .empty {
     text-align: center;
     padding: 40px 16px;

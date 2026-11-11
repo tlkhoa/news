@@ -51,6 +51,7 @@
 
     <div th:if="${total != 0}" class="articles-grid">
         <a th:each="article : ${articles}" th:href="@{/news/{id}(id=${article.id})}"
+           th:attr="data-id=${article.id}"
            class="article-card" th:classappend="${article.isRead} ? 'is-read' : ''">
             <img class="article-card__thumb" th:src="${article.imageUrl}" th:alt="${article.title}"
                  th:if="${article.imageUrl}" onerror="this.style.display='none'"/>
@@ -64,6 +65,7 @@
                 <h2 class="article-card__title" th:text="${article.title}">Tiêu đề bài viết</h2>
                 <div class="article-card__footer">
                     <span class="badge" th:text="'Đọc bài'">Đọc bài</span>
+                    <span class="badge is-read-badge" th:text="'Đã đọc'" th:if="${article.isRead}">Đã đọc</span>
                     <span class="score" th:text="${article.popularityScore != null ? article.popularityScore + ' điểm' : ''}">0 điểm</span>
                 </div>
             </div>

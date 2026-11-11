@@ -8,13 +8,16 @@ import com.tdk.news.service.ContentFetchService;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 @Controller
@@ -110,6 +113,14 @@ public class NewsController {
                 ? article.getPublishedAt().toLocalDate()
                 : LocalDate.now(ZoneId.of("Asia/Saigon")));
         return "detail";
+    }
+
+    /** Đánh dấu bài viết đã đọc (gọi AJAX từ danh sách khi click vào bài). */
+    @PostMapping("/news/{id}/read")
+    @ResponseBody
+    public Map<String, Object> markAsReadAjax(@PathVariable Long id) {
+        articleRepository.markAsRead(id);
+        return Map.of("ok", true, "id", id);
     }
 
     /** Thủ công tải lại toàn văn cho bài viết (dùng khi nút "Tải toàn văn" được nhấn). */
