@@ -21,6 +21,7 @@ com\tdk\news\service\ContentFetchService$FetchResult.class
 com\tdk\news\model\NewsArticle.class
 com\tdk\news\model\ArticleSummary.class
 com\tdk\news\repository\ArticleRepository.class
+com\tdk\news\service\RssCollectionService$1.class
 com\tdk\news\service\RssCollectionService$BatchJob.class
 com\tdk\news\repository\CategoryRepository.class
 com\tdk\news\controller\NewsController.class

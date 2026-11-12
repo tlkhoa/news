@@ -30,11 +30,21 @@ public class CollectionLogRepository {
                 "\"CollectionMethod\", \"Note\", \"Error\")\n" +
                 "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
         return jdbc.update(sql,
-            sourceId, sourceName,
+            sourceId, sanitize(sourceName),
             java.sql.Timestamp.valueOf(startedAt),
             java.sql.Timestamp.valueOf(finishedAt),
             itemsFound, itemsInserted,
-            collectionMethod, note, error);
+            sanitize(collectionMethod), sanitize(note), sanitize(error));
+    }
+
+    /** Loai bo ky tu null byte va cac ky tu dieu khien khong hop le trong UTF-8 de tranh loi PostgreSQL. */
+    public static String sanitize(String s) {
+        if (s == null) {
+            return null;
+        }
+        // Xoa ky tu null (U+0000) va cac ky tu dieu khien khac ngoai tab, newline, carriage return.
+        return s.replace("\u0000", "")
+                .replaceAll("[\\p{Cc}&&[^\\t\\n\\r]]", "");
     }
 
     /** Lay N ban ghi nhat ky moi nhat (moi nhat dau). */

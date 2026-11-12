@@ -6,12 +6,11 @@ import com.tdk.news.repository.ArticleRepository;
 import com.tdk.news.repository.CollectionLogRepository;
 import com.tdk.news.repository.DailyStatisticsRepository;
 import com.tdk.news.repository.SourceRepository;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
+
+import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -25,6 +24,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.InflaterInputStream;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import org.jsoup.Jsoup;
@@ -38,6 +39,7 @@ import org.w3c.dom.NodeList;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.xml.sax.InputSource;
 
 /**
  * Dịch vụ thu thập tin từ RSS của các nguồn đã bật và chèn vào bảng articles.
@@ -141,7 +143,7 @@ public class RssCollectionService {
                 LocalDateTime finishedAt = now();
                 results.add(new SourceResult(src.getName(), 0, 0, e.getMessage()));
                 collectionLogRepository.insert(src.getId(), src.getName(), startedAt, finishedAt, 0, 0,
-                        "RSS", null, e.getMessage());
+                        "RSS", null, CollectionLogRepository.sanitize(e.getMessage()));
             }
         }
 
@@ -170,157 +172,177 @@ public class RssCollectionService {
     }
 
     private int collectFromSource(Integer sourceId, String sourceName, String feedUrl, Integer sourceWeight) throws Exception {
-        System.out.println("[RSS] Bắt đầu thu thập từ: " + sourceName + " (" + feedUrl + ")");
-        Document doc = fetchAndParse(feedUrl);
-        NodeList items = doc.getElementsByTagName("item");
-        System.out.println("[RSS] " + sourceName + ": tìm thấy " + items.getLength() + " bài");
-        int[] inserted = {0};
-
-        // Danh sách thao tác DB đợi commit (batch).
-        List<BatchJob> batch = new ArrayList<>(BATCH_COMMIT_SIZE);
-
-        for (int i = 0; i < items.getLength(); i++) {
-            Node item = items.item(i);
-            String title = getText(item, "title");
-            String link = getText(item, "link");
-            String desc = getText(item, "description");
-            String pubDateStr = getText(item, "pubDate");
-            String contentEncoded = getTextNS(item, "http://purl.org/rss/1.0/modules/content/", "encoded");
-            String imageUrl = extractImageUrl(item, desc, contentEncoded);
-            String author = extractAuthor(item);
-
-            if (link == null || link.isBlank()) {
-                System.out.println("[RSS] Bỏ qua bài không có link: " + title);
-                continue;
+        try {
+//            if (!sourceName.equals("Nhân Dân"))
+//            {
+//                return 0;
+//            }
+            System.out.println("[RSS] Bắt đầu thu thập từ: " + sourceName + " (" + feedUrl + ")");
+            Document doc = fetchAndParse(feedUrl);
+            NodeList items = doc.getElementsByTagName("item");
+            int itemCount = items.getLength();
+            System.out.println("[RSS] " + sourceName + ": tìm thấy " + itemCount + " bài trong feed");
+            if (itemCount == 0) {
+                System.out.println("[RSS] " + sourceName + ": feed trống hoặc không có thẻ <item>, không có bài nào để chèn.");
             }
+            int[] inserted = {0};
+            int[] skippedDuplicate = {0};
+            int[] skippedNoLink = {0};
 
-            // Chuẩn hóa nội dung tóm tắt (dùng nếu không lấy được toàn văn).
-            String content = (contentEncoded != null && !contentEncoded.isBlank()) ? contentEncoded : desc;
+            // Danh sách thao tác DB đợi commit (batch).
+            List<BatchJob> batch = new ArrayList<>(BATCH_COMMIT_SIZE);
 
-            LocalDateTime publishedAt = parseDate(pubDateStr).toLocalDateTime();
+            for (int i = 0; i < items.getLength(); i++) {
+                Node item = items.item(i);
+                String title = getText(item, "title");
+                String link = getText(item, "link");
+                String desc = getText(item, "description");
+                String pubDateStr = getText(item, "pubDate");
+                String contentEncoded = getTextNS(item, "http://purl.org/rss/1.0/modules/content/", "encoded");
+                String imageUrl = extractImageUrl(item, desc, contentEncoded);
+                String author = extractAuthor(item);
 
-            System.out.println("[RSS] Đang chèn: title=" + title + ", link=" + link + ", publishedAt=" + publishedAt);
-
-            // 1. Phân loại chuyên mục (giống .NET NewsClassifier).
-            Integer categoryId = newsClassifier.classify(title, desc);
-
-            // 2. Fetch toàn văn từ trang chi tiết (mạng, nằm ngoài transaction).
-            String fullContentHtml = null;
-            try {
-                Thread.sleep(FETCH_DELAY_MS);
-            } catch (InterruptedException ie) {
-                Thread.currentThread().interrupt();
-                break;
-            }
-            try {
-                String html = fetchHtml(link);
-                if (html != null && !html.isBlank()) {
-                    URL pageUrl = new URL(link);
-                    ArticleContentExtractor.ExtractedArticle extracted = contentExtractor.extract(html, pageUrl);
-                    if (extracted != null && extracted.textLength >= 200) {
-                        fullContentHtml = extracted.html;
-                        System.out.println("[RSS] Trích xuất toàn văn OK: " + link
-                            + " (textLength=" + extracted.textLength
-                            + ", images=" + extracted.imageCount
-                            + ", hero=" + extracted.heroImageUrl + ")");
-                    } else {
-                        System.out.println("[RSS] Trích xuất toàn văn thất bại hoặc quá ngắn: " + link);
-                    }
+                if (link == null || link.isBlank()) {
+                    System.out.println("[RSS] Bỏ qua bài không có link: " + title);
+                    skippedNoLink[0]++;
+                    continue;
                 }
-            } catch (Exception e) {
-                System.err.println("[RSS] Lỗi fetch toàn văn cho " + link + " | " + e.getMessage());
-            }
 
-            // 3. Chuẩn bị dữ liệu chèn DB.
-            final String contentToStore = fullContentHtml != null ? fullContentHtml : content;
-            final String contentForClassifier = desc; // classify dùng mô tả RSS
-            final Integer catId = categoryId;
-            final Integer srcWeight = sourceWeight != null ? sourceWeight : 10;
-            final String fTitle = title;
-            final String fLink = link;
-            final String fDesc = desc;
-            final String fImageUrl = imageUrl;
-            final String fAuthor = author;
-            final LocalDateTime fPublishedAt = publishedAt;
-            final String fFullContentHtml = fullContentHtml;
+                // Chuẩn hóa nội dung tóm tắt (dùng nếu không lấy được toàn văn).
+                String content = (contentEncoded != null && !contentEncoded.isBlank()) ? contentEncoded : desc;
 
-            batch.add(() -> {
-                // Chèn bài (CategoryId đã có, PopularityScore tạm = 0).
-                int rows = articleRepository.insertIfNotExists(
-                    sourceId, catId, fTitle, fLink, fDesc, contentToStore, fImageUrl, fAuthor,
-                    fPublishedAt, 0.0, "RSS");
-                if (rows > 0) {
-                    inserted[0]++;
-                    System.out.println("[RSS] ĐÃ LƯU DB: " + fTitle
-                        + " (categoryId=" + catId + ")");
+                LocalDateTime publishedAt = parseDate(pubDateStr).toLocalDateTime();
 
-                    // Lưu toàn văn nếu có.
-                    if (fFullContentHtml != null) {
-                        Long articleId = articleRepository.findArticleIdByUrl(fLink);
-                        if (articleId != null) {
-                            articleRepository.updateContent(articleId, fFullContentHtml, java.time.LocalDateTime.now());
-                            System.out.println("[RSS] Đã lưu toàn văn cho id=" + articleId);
+                System.out.println("[RSS] Đang chèn: title=" + title + ", link=" + link + ", publishedAt=" + publishedAt);
 
-                            // Nếu RSS không có tác giả, thử trích từ trang chi tiết.
-                            if (fAuthor == null || fAuthor.isBlank()) {
-                                try {
-                                    String html2 = fetchHtml(fLink);
-                                    if (html2 != null && !html2.isBlank()) {
-                                        URL pageUrl2 = new URL(fLink);
-                                        org.jsoup.nodes.Document doc2 = Jsoup.parse(html2, pageUrl2.toString());
-                                        String authorFromPage = contentExtractor.extractAuthor(doc2);
-                                        if (authorFromPage != null && !authorFromPage.isBlank()) {
-                                            articleRepository.updateAuthor(articleId, authorFromPage);
-                                            System.out.println("[RSS] Đã lưu tác giả cho id=" + articleId + ": " + authorFromPage);
+                // 1. Phân loại chuyên mục (giống .NET NewsClassifier).
+                Integer categoryId = newsClassifier.classify(title, desc);
+
+                // 2. Fetch toàn văn từ trang chi tiết (mạng, nằm ngoài transaction).
+                String fullContentHtml = null;
+                try {
+                    Thread.sleep(FETCH_DELAY_MS);
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    break;
+                }
+                try {
+                    String html = fetchHtml(link);
+                    if (html != null && !html.isBlank()) {
+                        URL pageUrl = new URL(link);
+                        ArticleContentExtractor.ExtractedArticle extracted = contentExtractor.extract(html, pageUrl);
+                        if (extracted != null && extracted.textLength >= 200) {
+                            fullContentHtml = extracted.html;
+                            System.out.println("[RSS] Trích xuất toàn văn OK: " + link
+                                    + " (textLength=" + extracted.textLength
+                                    + ", images=" + extracted.imageCount
+                                    + ", hero=" + extracted.heroImageUrl + ")");
+                        } else {
+                            System.out.println("[RSS] Trích xuất toàn văn thất bại hoặc quá ngắn: " + link);
+                        }
+                    }
+                } catch (Exception e) {
+                    System.err.println("[RSS] Lỗi fetch toàn văn cho " + link + " | " + e.getMessage());
+                }
+
+                // 3. Chuẩn bị dữ liệu chèn DB.
+                final String contentToStore = fullContentHtml != null ? fullContentHtml : content;
+                final String contentForClassifier = desc; // classify dùng mô tả RSS
+                final Integer catId = categoryId;
+                final Integer srcWeight = sourceWeight != null ? sourceWeight : 10;
+                final String fTitle = title;
+                final String fLink = link;
+                final String fDesc = desc;
+                final String fImageUrl = imageUrl;
+                final String fAuthor = author;
+                final LocalDateTime fPublishedAt = publishedAt;
+                final String fFullContentHtml = fullContentHtml;
+
+                batch.add(() -> {
+                    // Chèn bài (CategoryId đã có, PopularityScore tạm = 0).
+                    int rows = articleRepository.insertIfNotExists(
+                            sourceId, catId, fTitle, fLink, fDesc, contentToStore, fImageUrl, fAuthor,
+                            fPublishedAt, 0.0, "RSS");
+                    if (rows > 0) {
+                        inserted[0]++;
+                        System.out.println("[RSS] ĐÃ LƯU DB: " + fTitle
+                                + " (categoryId=" + catId + ")");
+
+                        // Lưu toàn văn nếu có.
+                        if (fFullContentHtml != null) {
+                            Long articleId = articleRepository.findArticleIdByUrl(fLink);
+                            if (articleId != null) {
+                                articleRepository.updateContent(articleId, fFullContentHtml, java.time.LocalDateTime.now());
+                                System.out.println("[RSS] Đã lưu toàn văn cho id=" + articleId);
+
+                                // Nếu RSS không có tác giả, thử trích từ trang chi tiết.
+                                if (fAuthor == null || fAuthor.isBlank()) {
+                                    try {
+                                        String html2 = fetchHtml(fLink);
+                                        if (html2 != null && !html2.isBlank()) {
+                                            URL pageUrl2 = new URL(fLink);
+                                            org.jsoup.nodes.Document doc2 = Jsoup.parse(html2, pageUrl2.toString());
+                                            String authorFromPage = contentExtractor.extractAuthor(doc2);
+                                            if (authorFromPage != null && !authorFromPage.isBlank()) {
+                                                articleRepository.updateAuthor(articleId, authorFromPage);
+                                                System.out.println("[RSS] Đã lưu tác giả cho id=" + articleId + ": " + authorFromPage);
+                                            }
                                         }
+                                    } catch (Exception e) {
+                                        System.err.println("[RSS] Lỗi lấy tác giả từ trang chi tiết " + fLink + " | " + e.getMessage());
                                     }
-                                } catch (Exception e) {
-                                    System.err.println("[RSS] Lỗi lấy tác giả từ trang chi tiết " + fLink + " | " + e.getMessage());
                                 }
                             }
                         }
+
+                        // 4. Tính điểm phổ biến (giống .NET PopularityScorer).
+                        NewsArticle tmp = new NewsArticle();
+                        tmp.setPublishedAt(fPublishedAt);
+                        tmp.setCollectedAt(java.time.LocalDateTime.now());
+                        tmp.setViewCount(null); // RSS không có lượt đọc công khai
+                        tmp.setDescription(fDesc);
+                        tmp.setImageUrl(fImageUrl);
+                        tmp.setAuthor(fAuthor);
+
+                        PopularityScorerService.ScoreResult score = popularityScorer.scoreArticle(tmp, srcWeight, java.time.LocalDateTime.now());
+
+                        // Cập nhật PopularityScore, PopularityMethod (CategoryId đã lưu ở trên).
+                        Long articleId = articleRepository.findArticleIdByUrl(fLink);
+                        if (articleId != null) {
+                            articleRepository.updateArticleMetadata(
+                                    articleId, catId, score.total, score.method);
+                            System.out.println("[RSS] Đã cập nhật điểm id=" + articleId
+                                    + " score=" + score.total + " method=" + score.method);
+                        }
+                    } else {
+                        System.out.println("[RSS] BỎ QUA (trùng URL): " + fTitle);
+                        skippedDuplicate[0]++;
                     }
+                    return null;
+                });
 
-                    // 4. Tính điểm phổ biến (giống .NET PopularityScorer).
-                    NewsArticle tmp = new NewsArticle();
-                    tmp.setPublishedAt(fPublishedAt);
-                    tmp.setCollectedAt(java.time.LocalDateTime.now());
-                    tmp.setViewCount(null); // RSS không có lượt đọc công khai
-                    tmp.setDescription(fDesc);
-                    tmp.setImageUrl(fImageUrl);
-                    tmp.setAuthor(fAuthor);
-
-                    PopularityScorerService.ScoreResult score = popularityScorer.scoreArticle(tmp, srcWeight, java.time.LocalDateTime.now());
-
-                    // Cập nhật PopularityScore, PopularityMethod (CategoryId đã lưu ở trên).
-                    Long articleId = articleRepository.findArticleIdByUrl(fLink);
-                    if (articleId != null) {
-                        articleRepository.updateArticleMetadata(
-                            articleId, catId, score.total, score.method);
-                        System.out.println("[RSS] Đã cập nhật điểm id=" + articleId
-                            + " score=" + score.total + " method=" + score.method);
-                    }
-                } else {
-                    System.out.println("[RSS] BỎ QUA (trùng URL): " + fTitle);
+                // Commit mỗi BATCH_COMMIT_SIZE bài.
+                if (batch.size() >= BATCH_COMMIT_SIZE) {
+                    commitBatch(batch);
+                    batch.clear();
                 }
-                return null;
-            });
+            }
 
-            // Commit mỗi BATCH_COMMIT_SIZE bài.
-            if (batch.size() >= BATCH_COMMIT_SIZE) {
+            // Commit phần dư (dưới 10 bài).
+            if (!batch.isEmpty()) {
                 commitBatch(batch);
                 batch.clear();
             }
-        }
 
-        // Commit phần dư (dưới 10 bài).
-        if (!batch.isEmpty()) {
-            commitBatch(batch);
-            batch.clear();
+            System.out.println("[RSS] " + sourceName + ": tổng mới chèn = " + inserted[0]
+                    + ", bỏ qua trùng URL = " + skippedDuplicate[0]
+                    + ", bỏ qua không có link = " + skippedNoLink[0]);
+            return inserted[0];
+        }catch (Exception ex)
+        {
+            ex.printStackTrace();
         }
-
-        System.out.println("[RSS] " + sourceName + ": tổng mới chèn = " + inserted[0]);
-        return inserted[0];
+        return 0;
     }
 
     /** Commit một batch thao tác DB trong một transaction riêng. */
@@ -412,92 +434,327 @@ public class RssCollectionService {
         }
     }
 
-    private Document fetchAndParse(String feedUrl) throws Exception {
-        URL url = new URL(feedUrl);
-        HttpURLConnection con = (HttpURLConnection) url.openConnection();
-        con.setRequestMethod("GET");
-        con.setRequestProperty("User-Agent", USER_AGENT);
-        con.setRequestProperty("Accept", "application/rss+xml, application/xml, text/xml, */*");
-        con.setConnectTimeout(HTTP_TIMEOUT_MS);
-        con.setReadTimeout(HTTP_TIMEOUT_MS);
-        con.setInstanceFollowRedirects(true);
-        int code = con.getResponseCode();
-        try (InputStream in = code >= 400 ? con.getErrorStream() : con.getInputStream()) {
-            if (in == null) throw new IOException("HTTP " + code + " không có nội dung");
-            int maxBytes = 2_000_000; // 2 MB
-            ByteArrayOutputStream buf = new ByteArrayOutputStream();
-            byte[] tmp = new byte[8192];
-            int read;
-            int total = 0;
-            while ((read = in.read(tmp)) != -1) {
-                buf.write(tmp, 0, read);
-                total += read;
-                if (total > maxBytes) throw new IOException("Phản hồi quá lớn (> " + maxBytes + " bytes)");
-            }
-            byte[] bytes = buf.toByteArray();
 
-            // Phát hiện encoding từ header Content-Type (vì một số báo VN dùng Windows-1258 / ISO-8859-1).
+
+
+    public Document fetchAndParse(String feedUrl) throws Exception {
+        HttpURLConnection con = null;
+
+        try {
+            URL url = new URL(feedUrl);
+            con = (HttpURLConnection) url.openConnection();
+
+            con.setRequestMethod("GET");
+            con.setConnectTimeout(180000);
+            con.setReadTimeout(60000);
+            con.setInstanceFollowRedirects(true);
+
+            con.setRequestProperty(
+                    "User-Agent",
+                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/128.0 Safari/537.36"
+            );
+
+            con.setRequestProperty(
+                    "Accept",
+                    "application/rss+xml, application/xml, text/xml, */*"
+            );
+
+            // Cho phép server trả dữ liệu không nén hoặc nén
+            con.setRequestProperty(
+                    "Accept-Encoding",
+                    "gzip, deflate, identity"
+            );
+
+            int status = con.getResponseCode();
+
+            if (status < 200 || status >= 300) {
+                throw new IOException("HTTP error: " + status);
+            }
+
+            String contentEncoding = con.getHeaderField("Content-Encoding");
             String contentType = con.getContentType();
-            String charset = extractCharset(contentType);
 
-            String xmlContent = null;
-            if (charset != null) {
-                try {
-                    xmlContent = new String(bytes, charset);
-                } catch (Exception e) {
-                    xmlContent = null;
-                }
-            }
-            // Thử UTF-8, Windows-1258, ISO-8859-1 nếu chưa decode được.
-            if (xmlContent == null) {
-                for (String enc : new String[]{"UTF-8", "Windows-1258", "ISO-8859-1"}) {
-                    try {
-                        xmlContent = new String(bytes, enc);
-                        charset = enc;
-                        break;
-                    } catch (Exception e) {
+            System.out.println("[RSS] URL: " + feedUrl);
+            System.out.println("[RSS] HTTP: " + status);
+            System.out.println("[RSS] Content-Type: " + contentType);
+            System.out.println("[RSS] Content-Encoding: " + contentEncoding);
+
+            InputStream rawInput = con.getInputStream();
+
+            // Giải nén dữ liệu theo Content-Encoding
+            InputStream decodedInput = rawInput;
+
+            if (contentEncoding != null) {
+                String encoding = contentEncoding.toLowerCase(Locale.ROOT);
+
+                // Hỗ trợ nhiều Content-Encoding theo thứ tự giải mã ngược
+                String[] encodings = encoding.split(",");
+
+                for (int i = encodings.length - 1; i >= 0; i--) {
+                    String item = encodings[i].trim();
+
+                    if (item.isEmpty() || "identity".equals(item)) {
                         continue;
+                    }
+
+                    if ("gzip".equals(item) || "x-gzip".equals(item)) {
+                        decodedInput = new GZIPInputStream(decodedInput);
+
+                    } else if ("deflate".equals(item)) {
+                        decodedInput = new InflaterInputStream(decodedInput);
+
+                    } else {
+                        throw new IOException(
+                                "Unsupported Content-Encoding: " + item
+                        );
                     }
                 }
             }
-            if (xmlContent == null) {
-                xmlContent = new String(bytes, StandardCharsets.UTF_8);
+
+            // Giới hạn 2 MB sau giải nén
+            final int MAX_BYTES = 2 * 1024 * 1024;
+
+            InputStream limitedInput = new FilterInputStream(decodedInput) {
+                private int total = 0;
+
+                @Override
+                public int read() throws IOException {
+                    int value = super.read();
+
+                    if (value != -1) {
+                        total++;
+
+                        if (total > MAX_BYTES) {
+                            throw new IOException("RSS exceeds 2 MB");
+                        }
+                    }
+
+                    return value;
+                }
+
+                @Override
+                public int read(byte[] b, int off, int len)
+                        throws IOException {
+
+                    if (len == 0) {
+                        return 0;
+                    }
+
+                    int remaining = MAX_BYTES - total;
+
+                    int n = super.read(
+                            b,
+                            off,
+                            Math.min(len, remaining + 1)
+                    );
+
+                    if (n == -1) {
+                        return -1;
+                    }
+
+                    total += n;
+
+                    if (total > MAX_BYTES) {
+                        throw new IOException("RSS exceeds 2 MB");
+                    }
+
+                    return n;
+                }
+            };
+
+            // Đọc BOM
+            PushbackInputStream bomStream =
+                    new PushbackInputStream(limitedInput, 4);
+
+            byte[] prefix = new byte[4];
+            int count = 0;
+
+            while (count < prefix.length) {
+                int n = bomStream.read(
+                        prefix,
+                        count,
+                        prefix.length - count
+                );
+
+                if (n == -1) {
+                    break;
+                }
+
+                count += n;
+            }
+
+            String charset = "UTF-8";
+            int skip = 0;
+
+            // UTF-8 BOM
+            if (count >= 3
+                    && (prefix[0] & 0xFF) == 0xEF
+                    && (prefix[1] & 0xFF) == 0xBB
+                    && (prefix[2] & 0xFF) == 0xBF) {
+
                 charset = "UTF-8";
+                skip = 3;
+
+                // UTF-16 BE BOM
+            } else if (count >= 2
+                    && (prefix[0] & 0xFF) == 0xFE
+                    && (prefix[1] & 0xFF) == 0xFF) {
+
+                charset = "UTF-16BE";
+                skip = 2;
+
+                // UTF-16 LE BOM
+            } else if (count >= 2
+                    && (prefix[0] & 0xFF) == 0xFF
+                    && (prefix[1] & 0xFF) == 0xFE) {
+
+                charset = "UTF-16LE";
+                skip = 2;
             }
 
-            // Xóa BOM (Byte Order Mark) nếu có và trim khoảng trắng trước khi parse.
-            if (xmlContent != null && xmlContent.startsWith("\uFEFF")) {
-                xmlContent = xmlContent.substring(1);
-            }
-            xmlContent = xmlContent.trim();
-
-            if (xmlContent.isEmpty() || !xmlContent.startsWith("<")) {
-                throw new IOException("Phản hồi không phải XML/RSS hợp lệ (bắt đầu bằng: '" 
-                    + (xmlContent.length() > 50 ? xmlContent.substring(0, 50) : xmlContent) + "')");
+            // Trả lại những byte chưa xử lý
+            if (count > skip) {
+                bomStream.unread(prefix, skip, count - skip);
             }
 
-            // Parse bằng InputSource để tránh lỗi encoding không khớp với khai báo XML.
-            org.xml.sax.InputSource source = new org.xml.sax.InputSource(new java.io.StringReader(xmlContent));
-            source.setEncoding(charset != null ? charset : "UTF-8");
+            // Nếu không có BOM, lấy charset từ HTTP Content-Type
+            if (skip == 0 && contentType != null) {
+                java.util.regex.Matcher matcher =
+                        java.util.regex.Pattern.compile(
+                                "charset\\s*=\\s*[\"']?([^;\"'\\s]+)",
+                                java.util.regex.Pattern.CASE_INSENSITIVE
+                        ).matcher(contentType);
+
+                if (matcher.find()) {
+                    try {
+                        charset = matcher.group(1);
+                        Charset.forName(charset);
+                    } catch (Exception e) {
+                        charset = "UTF-8";
+                    }
+                }
+            }
+
+            System.out.println("[RSS] Charset: " + charset);
+
+            // Đọc trực tiếp InputStream
+            StringBuilder content = new StringBuilder();
+
+            try (BufferedReader reader = new BufferedReader(
+                    new InputStreamReader(
+                            bomStream,
+                            Charset.forName(charset)
+                    ))) {
+
+                char[] buffer = new char[4096];
+                int n;
+
+                while ((n = reader.read(buffer)) != -1) {
+                    content.append(buffer, 0, n);
+                }
+            }
+
+            String xmlContent = content.toString().trim();
+
+            // Xóa BOM nếu còn tồn tại
+            if (!xmlContent.isEmpty()
+                    && xmlContent.charAt(0) == '\uFEFF') {
+                xmlContent = xmlContent.substring(1).trim();
+            }
+
+            if (xmlContent.isEmpty()) {
+                throw new IOException("RSS response is empty");
+            }
+
+            // Kiểm tra HTML
+            String lower = xmlContent.toLowerCase(Locale.ROOT);
+
+            if (lower.startsWith("<!doctype html")
+                    || lower.startsWith("<html")
+                    || lower.contains("<html")) {
+
+                throw new IOException(
+                        "Server returned HTML instead of RSS. Content: "
+                                + xmlContent.substring(
+                                0,
+                                Math.min(300, xmlContent.length())
+                        )
+                );
+            }
+
+            // Tìm thẻ RSS hoặc Atom
+            int rssIndex = indexOfTag(xmlContent, "<rss");
+            int feedIndex = indexOfTag(xmlContent, "<feed");
+
+            int rootIndex = -1;
+
+            if (rssIndex >= 0 && feedIndex >= 0) {
+                rootIndex = Math.min(rssIndex, feedIndex);
+            } else if (rssIndex >= 0) {
+                rootIndex = rssIndex;
+            } else if (feedIndex >= 0) {
+                rootIndex = feedIndex;
+            }
+
+            if (rootIndex < 0) {
+                throw new IOException(
+                        "Không tìm thấy thẻ <rss> hoặc <feed>. Bắt đầu: '"
+                                + xmlContent.substring(
+                                0,
+                                Math.min(300, xmlContent.length())
+                        )
+                );
+            }
+
+            // Loại bỏ nội dung trước root XML
+            xmlContent = xmlContent.substring(rootIndex);
+
+            // Sửa các thẻ chưa đóng
+            xmlContent = fixUnclosedTags(xmlContent);
+
+            // Parse XML
+            InputSource source = new InputSource(
+                    new StringReader(xmlContent)
+            );
+
             return builder.parse(source);
+
         } finally {
-            con.disconnect();
+            if (con != null) {
+                con.disconnect();
+            }
         }
     }
 
+
+
     /** Trích xuất charset từ header Content-Type (ví dụ: "application/rss+xml; charset=Windows-1258"). */
-    private static String extractCharset(String contentType) {
+//    private static String extractCharset(String contentType) {
+//        if (contentType == null) {
+//            return null;
+//        }
+//        String[] parts = contentType.split(";");
+//        for (int i = 1; i < parts.length; i++) {
+//            String part = parts[i].trim();
+//            if (part.startsWith("charset=")) {
+//                return part.substring("charset=".length()).trim().replace("\"", "");
+//            }
+//        }
+//        return null;
+//    }
+
+    private String extractCharset(String contentType) {
         if (contentType == null) {
             return null;
         }
-        String[] parts = contentType.split(";");
-        for (int i = 1; i < parts.length; i++) {
-            String part = parts[i].trim();
-            if (part.startsWith("charset=")) {
-                return part.substring("charset=".length()).trim().replace("\"", "");
-            }
-        }
-        return null;
+
+        java.util.regex.Matcher matcher =
+                java.util.regex.Pattern.compile(
+                        "charset\\s*=\\s*[\"']?([^;\"'\\s]+)",
+                        java.util.regex.Pattern.CASE_INSENSITIVE
+                ).matcher(contentType);
+
+        return matcher.find() ? matcher.group(1).trim() : null;
     }
 
     /** Fetch HTML từ URL trang chi tiết (dùng để trích xuất toàn văn). */
@@ -532,6 +789,28 @@ public class RssCollectionService {
         } finally {
             con.disconnect();
         }
+    }
+
+    /** Tìm vị trí đầu tiên của thẻ tag (không phân biệt hoa thường). Trả về -1 nếu không tìm thấy. */
+    private static int indexOfTag(String content, String tag) {
+        if (content == null) return -1;
+        String lower = content.toLowerCase(Locale.ROOT);
+        String tagLower = tag.toLowerCase(Locale.ROOT);
+        return lower.indexOf(tagLower);
+    }
+
+    /**
+     * Sửa một số thẻ HTML thường gặp bị thiếu đóng trong RSS (ví dụ <img ...> không có />)
+     * để tránh lỗi "The element type img must be terminated by the matching end-tag".
+     * Chuyển <img ...> thành <img ... /> khi chưa có dấu đóng.
+     */
+    private static String fixUnclosedTags(String xml) {
+        if (xml == null) return xml;
+        // Tìm các thẻ <img ...> chưa có /> ở cuối và chưa có </img>
+        return xml.replaceAll(
+            "(?i)<img\\b([^>]*?)(?<!/)>",
+            "<img$1 />"
+        );
     }
 
     /* ---------- Kết quả ---------- */
