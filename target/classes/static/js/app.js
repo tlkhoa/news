@@ -557,6 +557,15 @@
                 e.preventDefault();
                 var id = btn.getAttribute('data-id');
                 console.log('[ListTTS] tts-btn click id=', id);
+
+                // Đánh dấu đã đọc trong DB và đổi màu item ngay lập tức (giống click vào item thường).
+                var card = btn.closest('.article-card');
+                fetch('/news/' + id + '/read', { method: 'POST', keepalive: true })
+                    .catch(function () {});
+                if (card) {
+                    markCardAsRead(card);
+                }
+
                 toggleTts(btn, id);
             });
         });
