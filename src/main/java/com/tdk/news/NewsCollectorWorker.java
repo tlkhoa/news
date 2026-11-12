@@ -1,5 +1,7 @@
 package com.tdk.news;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -17,24 +19,24 @@ import java.util.concurrent.CompletableFuture;
 @Profile("worker")
 public class NewsCollectorWorker {
 
+    private static final Logger log = LoggerFactory.getLogger(NewsCollectorWorker.class);
+
     @Bean
     public CommandLineRunner runPeriodically(RssCollectionService collectionService) {
         return args -> {
-            System.out.println("[WORKER] Đã khởi động Background Worker thu thập tin.");
+            log.info("[WORKER] Đã khởi động Background Worker thu thập tin.");
             while (true) {
                 try {
-                    System.out.println("[WORKER] [" + java.time.LocalDateTime.now()
-                            + "] Bắt đầu thu thập tin...");
+                    log.info("[WORKER] [{}] Bắt đầu thu thập tin...", java.time.LocalDateTime.now());
 
                     // Gọi collect trong nền (dùng thread pool của Spring @Async),
                     // main thread chờ cho đến khi xong một lượt rồi mới nghỉ.
                     CompletableFuture<?> future = collectionService.collectTodayAsync(null);
                     future.join();
 
-                    System.out.println("[WORKER] Hoàn tất lượt thu thập. Nghỉ 6 giờ...");
+                    log.info("[WORKER] Hoàn tất lượt thu thập. Nghỉ 6 giờ...");
                 } catch (Exception e) {
-                    System.err.println("[WORKER] Lỗi khi thu thập: " + e.getMessage());
-                    e.printStackTrace();
+                    log.error("[WORKER] Lỗi khi thu thập: {}", e.getMessage(), e);
                 }
 
                 // Nghỉ 6 giờ (21.600.000 ms) trước lượt tiếp theo
@@ -42,7 +44,7 @@ public class NewsCollectorWorker {
                     Thread.sleep(6L * 60 * 60 * 1000);
                 } catch (InterruptedException ie) {
                     Thread.currentThread().interrupt();
-                    System.out.println("[WORKER] Đã nhận tín hiệu dừng, thoát worker.");
+                    log.info("[WORKER] Đã nhận tín hiệu dừng, thoát worker.");
                     break;
                 }
             }
