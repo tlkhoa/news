@@ -841,5 +841,17 @@
             console.log('[ListTTS] start new speak item', id);
             speakTextFromBtn(btn, id);
         };
+
+        // Quay về trang tin tức giữ lại chuyên mục/ngày đã chọn (dùng trên trang admin).
+        window.goBackToNews = function (e) {
+            if (e) { e.preventDefault(); e.stopPropagation(); }
+            var savedDate = sessionStorage.getItem('newsDate');
+            var savedCat = sessionStorage.getItem('newsCategoryId');
+            var qs = [];
+            if (savedDate) qs.push('date=' + encodeURIComponent(savedDate));
+            if (savedCat) qs.push('categoryId=' + encodeURIComponent(savedCat));
+            window.location.href = '/news' + (qs.length ? '?' + qs.join('&') : '');
+            return false;
+        };
     })();
 })();
