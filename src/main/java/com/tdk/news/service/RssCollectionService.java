@@ -434,10 +434,59 @@ public class RssCollectionService {
                 total += read;
                 if (total > maxBytes) throw new IOException("Phản hồi quá lớn (> " + maxBytes + " bytes)");
             }
-            return builder.parse(new ByteArrayInputStream(buf.toByteArray()));
+            byte[] bytes = buf.toByteArray();
+
+            // Phát hiện encoding từ header Content-Type (vì một số báo VN dùng Windows-1258 / ISO-8859-1).
+            String contentType = con.getContentType();
+            String charset = extractCharset(contentType);
+
+            String xmlContent = null;
+            if (charset != null) {
+                try {
+                    xmlContent = new String(bytes, charset);
+                } catch (Exception e) {
+                    xmlContent = null;
+                }
+            }
+            // Thử UTF-8, Windows-1258, ISO-8859-1 nếu chưa decode được.
+            if (xmlContent == null) {
+                for (String enc : new String[]{"UTF-8", "Windows-1258", "ISO-8859-1"}) {
+                    try {
+                        xmlContent = new String(bytes, enc);
+                        charset = enc;
+                        break;
+                    } catch (Exception e) {
+                        continue;
+                    }
+                }
+            }
+            if (xmlContent == null) {
+                xmlContent = new String(bytes, StandardCharsets.UTF_8);
+                charset = "UTF-8";
+            }
+
+            // Parse bằng InputSource để tránh lỗi encoding không khớp với khai báo XML.
+            org.xml.sax.InputSource source = new org.xml.sax.InputSource(new java.io.StringReader(xmlContent));
+            source.setEncoding(charset != null ? charset : "UTF-8");
+            return builder.parse(source);
         } finally {
             con.disconnect();
         }
+    }
+
+    /** Trích xuất charset từ header Content-Type (ví dụ: "application/rss+xml; charset=Windows-1258"). */
+    private static String extractCharset(String contentType) {
+        if (contentType == null) {
+            return null;
+        }
+        String[] parts = contentType.split(";");
+        for (int i = 1; i < parts.length; i++) {
+            String part = parts[i].trim();
+            if (part.startsWith("charset=")) {
+                return part.substring("charset=".length()).trim().replace("\"", "");
+            }
+        }
+        return null;
     }
 
     /** Fetch HTML từ URL trang chi tiết (dùng để trích xuất toàn văn). */
