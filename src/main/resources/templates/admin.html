@@ -23,6 +23,16 @@
 
     <h1 class="section-title">⚙️ Quản trị — cập nhật tin hôm nay</h1>
 
+    <!-- Trạng thái keep-alive (đang cập nhật tin hay không). -->
+    <div class="admin-card" style="margin-bottom:16px;">
+        <h2 class="admin-title">🟢 Trạng thái hệ thống</h2>
+        <div class="detail-meta" style="border-bottom:none;padding-bottom:0;margin-bottom:0;">
+            <div class="item"><span class="label">Đang cập nhật tin</span>
+                <span th:text="${keepAliveActive ? 'Có (đang chạy keep-alive)' : 'Không (sẵn sàng)'}">—</span>
+            </div>
+        </div>
+    </div>
+
     <div class="admin-card">
         <h2 class="admin-title">Cập nhật tin ngày hiện tại</h2>
         <p class="small" style="margin-bottom:16px;">
@@ -33,6 +43,48 @@
             <button type="submit" class="btn btn-primary">🔄 Cập nhật tin hôm nay</button>
             <a class="btn btn-outline" th:href="@{/admin}">Làm mới trang</a>
         </form>
+    </div>
+
+    <form method="post" th:action="@{/admin/delete-today}" style="display:inline-block;margin-left:8px;">
+        <button type="submit" class="btn btn-outline"
+                onclick="return confirm('Bạn có chắc muốn xóa toàn bộ tin tức, nhật ký thu thập và thống kê của ngày hôm nay? Hành động này không thể khôi phục.');">
+            🗑️ Xóa tin hôm nay
+        </button>
+    </form>
+
+    <div th:if="${collectionLogs != null and not #lists.isEmpty(collectionLogs)}" class="admin-card">
+        <h2 class="admin-title">📋 Nhật ký thu thập gần đây</h2>
+        <table class="sources-table">
+            <thead>
+            <tr><th>Thời gian bắt đầu</th><th>Nguồn</th><th>Tìm thấy</th><th>Chèn mới</th><th>Phương thức</th><th>Ghi chú / Lỗi</th></tr>
+            </thead>
+            <tbody>
+            <tr th:each="log : ${collectionLogs}">
+                <td><span class="small" th:text="${log.startedAt}">—</span></td>
+                <td th:text="${log.sourceName}">—</td>
+                <td th:text="${log.itemsFound}">0</td>
+                <td th:text="${log.itemsInserted}">0</td>
+                <td><span class="small" th:text="${log.collectionMethod}">—</span></td>
+                <td><span class="small" th:text="${log.error != null ? log.error : log.note}">—</span></td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div th:if="${dailyStats != null and not #lists.isEmpty(dailyStats)}" class="admin-card">
+        <h2 class="admin-title">📊 Thống kê hôm nay</h2>
+        <table class="sources-table">
+            <thead>
+            <tr><th>Chuyên mục</th><th>Số bài</th><th>Điểm trung bình</th></tr>
+            </thead>
+            <tbody>
+            <tr th:each="stat : ${dailyStats}">
+                <td th:text="${stat.categoryId == null ? 'Tất cả chuyên mục' : categoryNames[stat.categoryId]}">—</td>
+                <td th:text="${stat.articleCount}">0</td>
+                <td th:text="${#numbers.format(stat.averagePopularity, '#.##')}">0</td>
+            </tr>
+            </tbody>
+        </table>
     </div>
 
     <div th:if="${lastResult != null and lastResult.sources != null and not #lists.isEmpty(lastResult.sources)}" class="admin-card">

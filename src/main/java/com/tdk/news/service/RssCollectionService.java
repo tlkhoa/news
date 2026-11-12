@@ -3,6 +3,8 @@ package com.tdk.news.service;
 import com.tdk.news.model.NewsArticle;
 import com.tdk.news.model.NewsSource;
 import com.tdk.news.repository.ArticleRepository;
+import com.tdk.news.repository.CollectionLogRepository;
+import com.tdk.news.repository.DailyStatisticsRepository;
 import com.tdk.news.repository.SourceRepository;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -83,6 +85,8 @@ public class RssCollectionService {
     private final ArticleContentExtractor contentExtractor;
     private final NewsClassifierService newsClassifier;
     private final PopularityScorerService popularityScorer;
+    private final CollectionLogRepository collectionLogRepository;
+    private final DailyStatisticsRepository dailyStatisticsRepository;
     private final DocumentBuilder builder;
     private final TransactionTemplate transactionTemplate;
 
@@ -91,12 +95,16 @@ public class RssCollectionService {
                                 ArticleContentExtractor contentExtractor,
                                 NewsClassifierService newsClassifier,
                                 PopularityScorerService popularityScorer,
+                                CollectionLogRepository collectionLogRepository,
+                                DailyStatisticsRepository dailyStatisticsRepository,
                                 PlatformTransactionManager transactionManager) throws Exception {
         this.sourceRepository = sourceRepository;
         this.articleRepository = articleRepository;
         this.contentExtractor = contentExtractor;
         this.newsClassifier = newsClassifier;
         this.popularityScorer = popularityScorer;
+        this.collectionLogRepository = collectionLogRepository;
+        this.dailyStatisticsRepository = dailyStatisticsRepository;
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
         factory.setNamespaceAware(true);
         factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
@@ -117,18 +125,48 @@ public class RssCollectionService {
         for (NewsSource src : sources) {
             if (src.getFeedUrl() == null || src.getFeedUrl().isBlank()) {
                 results.add(new SourceResult(src.getName(), 0, 0, "Không có FeedUrl"));
+                collectionLogRepository.insert(src.getId(), src.getName(), now(), now(), 0, 0,
+                        "RSS", "Không có FeedUrl", null);
                 continue;
             }
+            LocalDateTime startedAt = now();
             try {
                 int inserted = collectFromSource(src.getId(), src.getName(), src.getFeedUrl(), src.getSourceWeight());
                 totalInserted += inserted;
+                LocalDateTime finishedAt = now();
                 results.add(new SourceResult(src.getName(), inserted, inserted, "OK"));
+                collectionLogRepository.insert(src.getId(), src.getName(), startedAt, finishedAt, inserted, inserted,
+                        "RSS", "OK", null);
             } catch (Exception e) {
+                LocalDateTime finishedAt = now();
                 results.add(new SourceResult(src.getName(), 0, 0, e.getMessage()));
+                collectionLogRepository.insert(src.getId(), src.getName(), startedAt, finishedAt, 0, 0,
+                        "RSS", null, e.getMessage());
             }
         }
 
+        // Luu thong ke tong hop ngay hom nay vao DailyStatistics (tong + tung chuyen muc).
+        saveDailyStatistics(today);
+
         return new CollectionResult(today, totalInserted, results);
+    }
+
+    private LocalDateTime now() {
+        return LocalDateTime.now(ZoneId.of("Asia/Saigon"));
+    }
+
+    /** Tinh toan va luu thong ke ngay (tong + tung chuyen muc) vao DailyStatistics. */
+    private void saveDailyStatistics(LocalDate date) {
+        int total = articleRepository.countByDate(date);
+        Double avg = articleRepository.avgPopularityByDate(date);
+        dailyStatisticsRepository.upsert(date, null, total, avg == null ? 0.0 : avg);
+
+        List<Integer> categoryIds = articleRepository.findDistinctCategoryIdsByDate(date);
+        for (Integer catId : categoryIds) {
+            int cnt = articleRepository.countByDateAndCategory(date, catId);
+            Double a = articleRepository.avgPopularityByDateAndCategory(date, catId);
+            dailyStatisticsRepository.upsert(date, catId, cnt, a == null ? 0.0 : a);
+        }
     }
 
     private int collectFromSource(Integer sourceId, String sourceName, String feedUrl, Integer sourceWeight) throws Exception {

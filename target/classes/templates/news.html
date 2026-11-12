@@ -50,9 +50,9 @@
     </div>
 
     <div th:if="${total != 0}" class="articles-grid">
-        <a th:each="article : ${articles}" th:href="@{/news/{id}(id=${article.id})}"
-           th:attr="data-id=${article.id}"
-           class="article-card" th:classappend="${article.isRead} ? 'is-read' : ''">
+        <div th:each="article : ${articles}"
+             th:attr="data-id=${article.id}"
+             class="article-card" th:classappend="${article.isRead} ? 'is-read' : ''">
             <img class="article-card__thumb" th:src="${article.imageUrl}" th:alt="${article.title}"
                  th:if="${article.imageUrl}" onerror="this.style.display='none'"/>
             <div class="article-card__body">
@@ -65,12 +65,48 @@
                 <h2 class="article-card__title" th:text="${article.title}">Tiêu đề bài viết</h2>
                 <div class="article-card__footer">
                     <span class="badge" th:text="'Đọc bài'">Đọc bài</span>
-                    <span class="badge is-read-badge" th:text="'Đã đọc'" th:if="${article.isRead}">Đã đọc</span>
+                    <button class="btn tts-btn" th:attr="data-id=${article.id}">🔊 Nghe bài</button>
                     <span class="score" th:text="${article.popularityScore != null ? article.popularityScore + ' điểm' : ''}">0 điểm</span>
+                    <span class="badge is-read-badge" th:text="'Đã đọc'" th:if="${article.isRead}">Đã đọc</span>
                 </div>
             </div>
-        </a>
+        </div>
     </div>
+
+    <style>
+    /* Bố trí các nút/action trong footer item tin */
+    .article-card__footer {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        margin-top: 10px;
+    }
+    /* Nút nghe bài (TTS) trong danh sách */
+    .tts-btn {
+        background: var(--btn-bg, #2563eb);
+        color: #fff;
+        border: none;
+        border-radius: 6px;
+        padding: 4px 10px;
+        font-size: 0.85rem;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+    }
+    .tts-btn:hover {
+        opacity: 0.9;
+    }
+    .tts-btn.paused {
+        background: #ca8a04;
+    }
+    .tts-btn.playing {
+        background: #dc2626;
+    }
+    /* Khi đã đọc: 4 nút/action được rải đều nhờ justify-content: space-between ở trên */
+    </style>
 </main>
 
 <footer class="site-footer">

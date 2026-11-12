@@ -537,4 +537,300 @@
             }
         });
     })();
+
+    // ---------- Gán sự kiện cho danh sách tin (thay vì inline HTML onclick) ----------
+    document.addEventListener('DOMContentLoaded', function () {
+        // Click item tin tức -> chuyển trang chi tiết (trừ khi click từ nút TTS).
+        document.querySelectorAll('.article-card').forEach(function (card) {
+            card.addEventListener('click', function (e) {
+                if (e.target.closest('.tts-btn')) return;
+                var id = card.getAttribute('data-id');
+                console.log('[ListTTS] card click id=', id);
+                location.href = '/news/' + id;
+            });
+        });
+
+        // Click nút TTS trong mỗi item.
+        document.querySelectorAll('.tts-btn').forEach(function (btn) {
+            btn.addEventListener('click', function (e) {
+                e.stopPropagation();
+                e.preventDefault();
+                var id = btn.getAttribute('data-id');
+                console.log('[ListTTS] tts-btn click id=', id);
+                toggleTts(btn, id);
+            });
+        });
+    });
+
+    // ---------- Chuyển trang chi tiết khi click item tin ----------
+    window.openArticle = function (id) {
+        console.log('[ListTTS] openArticle called id=', id);
+        location.href = '/news/' + id;
+    };
+
+    // ---------- TTS (Text-to-Speech) cho DANH SÁCH tin tức ----------
+    (function initListTTS() {
+        if (!window.speechSynthesis) {
+            console.log('[ListTTS] window.speechSynthesis không tồn tại trên trình duyệt này — TTS bị bỏ qua.');
+            return;
+        }
+        console.log('[ListTTS] speechSynthesis supported, init TTS controls.');
+        var synth = window.speechSynthesis;
+        var currentUtterance = null;
+        var currentItemId = null;
+        var currentSegments = [];
+        var currentSegIdx = 0;
+        var isPaused = false;
+        var isPlaying = false;
+
+        function stopCurrent() {
+            console.log('[ListTTS] stopCurrent called');
+            try { if (synth.speaking || synth.paused) synth.cancel(); } catch (e) {}
+            if (currentUtterance) {
+                currentUtterance.onend = null;
+                currentUtterance.onerror = null;
+                currentUtterance = null;
+            }
+            setListTtsButton(null, 'idle');
+            currentItemId = null;
+            currentSegments = [];
+            currentSegIdx = 0;
+            isPaused = false;
+            isPlaying = false;
+        }
+
+        function setListTtsButton(activeId, state) {
+            document.querySelectorAll('.tts-btn').forEach(function (btn) {
+                var id = btn.getAttribute('data-id');
+                if (id == null) return;
+                var isActive = (activeId != null && id == activeId);
+                if (!isActive) {
+                    // Không disable nút item khác — cho phép click để chuyển bài.
+                    btn.disabled = false;
+                    btn.classList.remove('playing', 'paused');
+                    btn.textContent = '🔊 Nghe bài';
+                    return;
+                }
+                if (state === 'playing') {
+                    btn.textContent = '⏸ Tạm dừng';
+                    btn.classList.add('playing');
+                    btn.classList.remove('paused');
+                    btn.disabled = false;
+                } else if (state === 'paused') {
+                    btn.textContent = '▶ Tiếp tục';
+                    btn.classList.add('paused');
+                    btn.classList.remove('playing');
+                    btn.disabled = false;
+                } else {
+                    btn.textContent = '🔊 Nghe bài';
+                    btn.classList.remove('playing', 'paused');
+                    btn.disabled = false;
+                }
+            });
+        }
+
+        function speakText(itemId, text) {
+            console.log('[ListTTS] speakText id=', itemId, '| text length=', text.length);
+            stopCurrent();
+            currentItemId = itemId;
+            isPaused = false;
+            isPlaying = true;
+            setListTtsButton(itemId, 'playing');
+
+            // Tách thành các câu nhỏ để tránh synthesis-failed khi đoạn quá dài
+            // hoặc khi trình duyệt chưa sẵn sàng giọng đọc (giống trang chi tiết).
+            currentSegments = splitListSentences(text);
+            console.log('[ListTTS] split into', currentSegments.length, 'sentences for id=', itemId);
+            if (currentSegments.length === 0) {
+                setListTtsButton(itemId, 'idle');
+                currentItemId = null;
+                isPlaying = false;
+                isPaused = false;
+                return;
+            }
+
+            currentSegIdx = 0;
+            speakNext();
+        }
+
+        // Tiếp tục đọc từ câu hiện tại (currentSegIdx) mà không reset lại đầu.
+        function speakRemaining() {
+            if (currentSegIdx >= currentSegments.length) {
+                console.log('[ListTTS] all segments done id=', currentItemId);
+                isPlaying = false;
+                isPaused = false;
+                setListTtsButton(currentItemId, 'idle');
+                currentItemId = null;
+                currentSegments = [];
+                currentSegIdx = 0;
+                return;
+            }
+            console.log('[ListTTS] speakRemaining from segIdx', currentSegIdx, 'id=', currentItemId);
+            speakNext();
+        }
+
+        function speakNext() {
+            if (currentSegIdx >= currentSegments.length) {
+                console.log('[ListTTS] all segments done id=', currentItemId);
+                isPlaying = false;
+                isPaused = false;
+                setListTtsButton(currentItemId, 'idle');
+                currentItemId = null;
+                currentSegments = [];
+                currentSegIdx = 0;
+                return;
+            }
+            var seg = currentSegments[currentSegIdx];
+            console.log('[ListTTS] speak segment', currentSegIdx, '/', currentSegments.length, 'id=', currentItemId, '| text=', seg.substring(0, 60));
+
+            var utterance = new SpeechSynthesisUtterance(seg);
+            var voices = synth.getVoices() || [];
+            var viVoice = voices.find(function (v) {
+                return /^vi/i.test(v.lang) || /vietnamese/i.test(v.name);
+            });
+            if (viVoice) {
+                utterance.voice = viVoice;
+            } else {
+                utterance.lang = 'vi';
+            }
+            utterance.rate = 1;
+            utterance.pitch = 1;
+            utterance.volume = 1;
+
+            utterance.onend = function () {
+                currentSegIdx++;
+                speakNext();
+            };
+            utterance.onerror = function (err) {
+                console.error('[ListTTS] segment error id=', currentItemId, 'seg=', currentSegIdx, err.error);
+                // Thử lại với lang khác nếu là synthesis-failed
+                if (err.error === 'synthesis-failed') {
+                    var langs = ['vi', 'vi-VN', ''];
+                    var tried = utterance.lang || '';
+                    var nextLang = null;
+                    for (var i = 0; i < langs.length; i++) {
+                        if (langs[i] === tried) {
+                            nextLang = langs[i + 1];
+                            break;
+                        }
+                    }
+                    if (nextLang !== null) {
+                        console.log('[ListTTS] retry segment with lang=', nextLang);
+                        var retry = new SpeechSynthesisUtterance(seg);
+                        retry.lang = nextLang;
+                        retry.rate = 1; retry.pitch = 1; retry.volume = 1;
+                        retry.onend = function () { currentSegIdx++; speakNext(); };
+                        retry.onerror = function () { currentSegIdx++; speakNext(); };
+                        currentUtterance = retry;
+                        try { synth.speak(retry); } catch (e) { currentSegIdx++; speakNext(); }
+                        return;
+                    }
+                }
+                // Bỏ qua câu này, sang câu tiếp theo để không kẹt.
+                currentSegIdx++;
+                speakNext();
+            };
+
+            currentUtterance = utterance;
+            try {
+                synth.speak(utterance);
+                console.log('[ListTTS] synth.speak segment', currentSegIdx, 'id=', currentItemId);
+            } catch (e) {
+                console.error('[ListTTS] speak segment exception', e);
+                currentSegIdx++;
+                speakNext();
+            }
+        }
+
+        function splitListSentences(text) {
+            if (!text) return [];
+            var result = [];
+            var current = '';
+            for (var i = 0; i < text.length; i++) {
+                current += text[i];
+                if ('.!?'.indexOf(text[i]) !== -1) {
+                    if (i + 1 >= text.length || text[i + 1] === ' ' || text[i + 1] === '\n' || text[i + 1] === '\r') {
+                        var s = current.trim();
+                        if (s) result.push(s);
+                        current = '';
+                        while (i + 1 < text.length && (text[i + 1] === ' ' || text[i + 1] === '\n' || text[i + 1] === '\r')) i++;
+                    }
+                }
+            }
+            var last = current.trim();
+            if (last) result.push(last);
+            return result;
+        }
+
+        function speakTextFromBtn(btn, id) {
+            console.log('[ListTTS] speakTextFromBtn id=', id);
+            fetch('/news/' + id + '/content')
+                .then(function (resp) {
+                    console.log('[ListTTS] fetch status=', resp.status);
+                    return resp.json();
+                })
+                .then(function (data) {
+                    console.log('[ListTTS] fetch data=', data);
+                    if (data.error) {
+                        btn.textContent = '🔊 Nghe bài';
+                        console.error('[ListTTS]', data.error);
+                        return;
+                    }
+                    var text = (data.title || '') + '. ' + (data.content || '');
+                    if (!text.trim()) {
+                        btn.textContent = '🔊 Nghe bài';
+                        console.warn('[ListTTS] empty content for id=', id);
+                        return;
+                    }
+                    speakText(id, text);
+                })
+                .catch(function (err) {
+                    console.error('[ListTTS] fetch error', err);
+                    btn.textContent = '🔊 Nghe bài';
+                });
+        }
+
+        // Click nút "Nghe bài / Tạm dừng / Tiếp tục".
+        window.toggleTts = function (btn, id) {
+            console.log('[ListTTS] toggleTts clicked id=', id, '| isPlaying=', isPlaying, '| isPaused=', isPaused, '| currentItemId=', currentItemId);
+
+            // Luôn dừng item KHÁC trước khi bắt đầu item mới (đọc hoặc tạm dừng đều dừng hết).
+            if (currentItemId != null && currentItemId != id) {
+                console.log('[ListTTS] switching from item', currentItemId, 'to', id);
+                stopCurrent();
+            }
+
+            // Đang tạm dừng item NÀY -> tiếp tục đọc từ câu hiện tại.
+            if (currentItemId == id && isPaused && !isPlaying) {
+                console.log('[ListTTS] resume item', id, '| segIdx=', currentSegIdx, '/', currentSegments.length);
+                isPaused = false;
+                isPlaying = true;
+                setListTtsButton(id, 'playing');
+
+                if (currentUtterance) {
+                    currentUtterance.onend = null;
+                    currentUtterance.onerror = null;
+                    currentUtterance = null;
+                }
+                try { synth.cancel(); } catch (e) {}
+
+                speakRemaining();
+                return;
+            }
+
+            // ĐANG ĐỌC item NÀY -> tạm dừng.
+            if (currentItemId == id && isPlaying && !isPaused) {
+                console.log('[ListTTS] pause item', id);
+                try { synth.pause(); } catch (e) {}
+                isPaused = true;
+                isPlaying = false;
+                setListTtsButton(id, 'paused');
+                return;
+            }
+
+            // Mặc định (chưa đọc / đã đọc xong) -> bắt đầu đọc item này.
+            console.log('[ListTTS] start new speak item', id);
+            speakTextFromBtn(btn, id);
+        };
+    })();
 })();

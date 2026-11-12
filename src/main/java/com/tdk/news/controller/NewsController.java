@@ -6,7 +6,9 @@ import com.tdk.news.repository.ArticleRepository;
 import com.tdk.news.repository.CategoryRepository;
 import com.tdk.news.service.ContentFetchService;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -121,6 +123,63 @@ public class NewsController {
     public Map<String, Object> markAsReadAjax(@PathVariable Long id) {
         articleRepository.markAsRead(id);
         return Map.of("ok", true, "id", id);
+    }
+
+    /**
+     * Lấy nội dung bài viết để đọc aloud (TTS).
+     * Nếu DB chưa có toàn văn → fetch từ Url, lưu DB, rồi trả về.
+     * Trả về JSON: { id, title, content } (content là văn bản thô, đã loại thẻ HTML).
+     */
+    @GetMapping("/news/{id}/content")
+    @ResponseBody
+    public Map<String, Object> getArticleContent(@PathVariable Long id) {
+        System.out.println("[ListTTS] GET /news/" + id + "/content called");
+        Optional<NewsArticle> articleOpt = articleRepository.findById(id);
+        if (articleOpt.isEmpty()) {
+            System.out.println("[ListTTS] article not found id=" + id);
+            Map<String, Object> err = new HashMap<>();
+            err.put("error", "Không tìm thấy bài viết.");
+            err.put("id", id);
+            return err;
+        }
+
+        NewsArticle article = articleOpt.get();
+        System.out.println("[ListTTS] found article id=" + id + " title=" + article.getTitle()
+            + " contentBlank=" + (article.getContent() == null || article.getContent().isBlank())
+            + " fetchedAt=" + article.getContentFetchedAt());
+
+        String content = article.getContent();
+        LocalDateTime fetchedAt = article.getContentFetchedAt();
+
+        if ((content == null || content.isBlank() || fetchedAt == null) && article.getUrl() != null) {
+            System.out.println("[ListTTS] fetching content from URL: " + article.getUrl());
+            String fetched = contentFetchService.fetchContent(id);
+            if (fetched != null && !fetched.isBlank()) {
+                content = fetched;
+                article.setContent(content);
+                System.out.println("[ListTTS] fetched content length=" + fetched.length());
+            } else {
+                System.out.println("[ListTTS] fetch returned null/blank");
+            }
+        }
+
+        String plainText = stripHtml(content == null ? "" : content);
+        System.out.println("[ListTTS] plainText length=" + plainText.length());
+        Map<String, Object> result = new HashMap<>();
+        result.put("id", id);
+        result.put("title", article.getTitle());
+        result.put("content", plainText);
+        return result;
+    }
+
+    /** Loại bỏ thẻ HTML và chuỗi khoảng trắng dư để TTS đọc văn bản thuần. */
+    private static String stripHtml(String html) {
+        if (html == null || html.isBlank()) {
+            return "";
+        }
+        return html.replaceAll("<[^>]+>", " ")
+                   .replaceAll("\\s+", " ")
+                   .trim();
     }
 
     /** Thủ công tải lại toàn văn cho bài viết (dùng khi nút "Tải toàn văn" được nhấn). */

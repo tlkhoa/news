@@ -166,6 +166,30 @@ public class ArticleRepository {
         return jdbc.update(sql, content, contentFetchedAt, id);
     }
 
+    /** Trung binh diem popularity cua bai trong mot ngay. */
+    public Double avgPopularityByDate(LocalDate date) {
+        String sql = "SELECT AVG(\"PopularityScore\") FROM \"Articles\" WHERE CAST(\"PublishedAt\" AS DATE) = ?";
+        return jdbc.queryForObject(sql, Double.class, date);
+    }
+
+    /** Trung binh diem popularity cua bai trong mot ngay va chuyen muc. */
+    public Double avgPopularityByDateAndCategory(LocalDate date, Integer categoryId) {
+        String sql = "SELECT AVG(\"PopularityScore\") FROM \"Articles\" WHERE CAST(\"PublishedAt\" AS DATE) = ? AND \"CategoryId\" = ?";
+        return jdbc.queryForObject(sql, Double.class, date, categoryId);
+    }
+
+    /** Lay danh sach CategoryId phan biet cua bai trong mot ngay (loai bo NULL). */
+    public List<Integer> findDistinctCategoryIdsByDate(LocalDate date) {
+        String sql = "SELECT DISTINCT \"CategoryId\" FROM \"Articles\" WHERE CAST(\"PublishedAt\" AS DATE) = ? AND \"CategoryId\" IS NOT NULL";
+        return jdbc.queryForList(sql, Integer.class, date);
+    }
+
+    /** Xoa tat ca bai tin cua mot ngay (dung chuc nang xoa tin hom nay). */
+    public int deleteByDate(LocalDate date) {
+        String sql = "DELETE FROM \"Articles\" WHERE CAST(\"PublishedAt\" AS DATE) = ?";
+        return jdbc.update(sql, java.sql.Date.valueOf(date));
+    }
+
     /** Lấy danh sách nguồn đã bật (dùng cho trang admin cập nhật). */
     public List<Object[]> findEnabledSources() {
         String sql = "SELECT \"Id\", \"Name\", \"FeedUrl\" FROM \"Sources\" WHERE \"Enabled\" = true ORDER BY \"Name\"";
