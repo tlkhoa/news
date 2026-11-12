@@ -15,6 +15,7 @@ E:\projects\me\dotnet\VietnamNewsTrendAnalyzer\posgresql\web\news\src\main\java\
 E:\projects\me\dotnet\VietnamNewsTrendAnalyzer\posgresql\web\news\src\main\java\com\tdk\news\controller\NewsController.java
 E:\projects\me\dotnet\VietnamNewsTrendAnalyzer\posgresql\web\news\src\main\java\com\tdk\news\model\NewsCategory.java
 E:\projects\me\dotnet\VietnamNewsTrendAnalyzer\posgresql\web\news\src\main\java\com\tdk\news\model\DailyStatistics.java
+E:\projects\me\dotnet\VietnamNewsTrendAnalyzer\posgresql\web\news\src\main\java\com\tdk\news\NewsCollectorWorker.java
 E:\projects\me\dotnet\VietnamNewsTrendAnalyzer\posgresql\web\news\src\main\java\com\tdk\news\model\NewsArticle.java
 E:\projects\me\dotnet\VietnamNewsTrendAnalyzer\posgresql\web\news\src\main\java\com\tdk\news\repository\SourceRepository.java
 E:\projects\me\dotnet\VietnamNewsTrendAnalyzer\posgresql\web\news\src\main\java\com\tdk\news\service\ContentFetchService.java

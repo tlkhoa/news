@@ -172,11 +172,15 @@ public class RssCollectionService {
         try {
             keepAliveService.activateKeepAlive();
             CollectionResult result = collectToday();
-            session.setAttribute("lastResult", result);
-            session.setAttribute("lastResultError", null);
+            if (session != null) {
+                session.setAttribute("lastResult", result);
+                session.setAttribute("lastResultError", null);
+            }
             return CompletableFuture.completedFuture(result);
         } catch (Exception e) {
-            session.setAttribute("lastResultError", e.getMessage());
+            if (session != null) {
+                session.setAttribute("lastResultError", e.getMessage());
+            }
             return CompletableFuture.failedFuture(e);
         } finally {
             keepAliveService.deactivateKeepAlive();

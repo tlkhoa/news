@@ -79,12 +79,11 @@ public class AdminController {
         return "admin";
     }
 
-    /** Chạy thu thập tin hôm nay trong nền. Trả về ngay, không chờ xử lý xong. */
+    /** Chức năng cập nhật hiện chỉ chạy qua Background Worker mỗi 6 giờ. */
     @PostMapping("/admin/update-today")
-    public String updateToday(HttpSession session, RedirectAttributes redirect) {
-        collectionService.collectTodayAsync(session);
-        redirect.addFlashAttribute("message",
-            "Đang cập nhật tin trong nền... Vui lòng làm mới trang sau vài phút để xem kết quả.");
+    public String updateToday(RedirectAttributes redirect) {
+        redirect.addFlashAttribute("error",
+            "Chức năng cập nhật hiện chỉ chạy tự động qua Background Worker mỗi 6 giờ.");
         return "redirect:/admin";
     }
 
