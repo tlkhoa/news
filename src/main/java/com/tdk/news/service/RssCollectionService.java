@@ -465,6 +465,17 @@ public class RssCollectionService {
                 charset = "UTF-8";
             }
 
+            // Xóa BOM (Byte Order Mark) nếu có và trim khoảng trắng trước khi parse.
+            if (xmlContent != null && xmlContent.startsWith("\uFEFF")) {
+                xmlContent = xmlContent.substring(1);
+            }
+            xmlContent = xmlContent.trim();
+
+            if (xmlContent.isEmpty() || !xmlContent.startsWith("<")) {
+                throw new IOException("Phản hồi không phải XML/RSS hợp lệ (bắt đầu bằng: '" 
+                    + (xmlContent.length() > 50 ? xmlContent.substring(0, 50) : xmlContent) + "')");
+            }
+
             // Parse bằng InputSource để tránh lỗi encoding không khớp với khai báo XML.
             org.xml.sax.InputSource source = new org.xml.sax.InputSource(new java.io.StringReader(xmlContent));
             source.setEncoding(charset != null ? charset : "UTF-8");
