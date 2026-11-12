@@ -19,6 +19,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import javax.servlet.http.HttpSession;
+
 @Controller
 public class AdminController {
 
@@ -47,7 +49,7 @@ public class AdminController {
 
     /** Trang quản trị: danh sách nguồn, nút cập nhật tin hôm nay, nhật ký thu thuat va thong ke. */
     @GetMapping("/admin")
-    public String admin(Model model) {
+    public String admin(Model model, HttpSession session) {
         LocalDate today = LocalDate.now(ZoneId.of("Asia/Saigon"));
         model.addAttribute("pageTitle", "Quản trị");
         model.addAttribute("sources", sourceRepository.findAll());
@@ -61,27 +63,28 @@ public class AdminController {
 
         model.addAttribute("dailyStats", dailyStatisticsRepository.findByDate(today));
         model.addAttribute("keepAliveActive", keepAliveService.isKeepAliveActive());
-        // lastResult được thêm bởi flash attribute sau khi POST; nếu chưa có thì để null.
+
+        // Đọc kết quả cập nhật chạy nền từ session (nếu có) và xóa để chỉ hiện 1 lần.
+        CollectionResult lastResult = (CollectionResult) session.getAttribute("lastResult");
+        String lastResultError = (String) session.getAttribute("lastResultError");
+        if (lastResult != null) {
+            model.addAttribute("lastResult", lastResult);
+            session.removeAttribute("lastResult");
+        }
+        if (lastResultError != null) {
+            model.addAttribute("error", "Lỗi khi cập nhật: " + lastResultError);
+            session.removeAttribute("lastResultError");
+        }
+        // lastResult cũng có thể đến từ flash attribute (nếu chưa chuyển hoàn toàn sang async).
         return "admin";
     }
 
-    /** Chạy thu thập tin hôm nay từ các nguồn RSS đã bật. */
+    /** Chạy thu thập tin hôm nay trong nền. Trả về ngay, không chờ xử lý xong. */
     @PostMapping("/admin/update-today")
-    public String updateToday(RedirectAttributes redirect) {
-        try {
-            keepAliveService.activateKeepAlive();
-
-            CollectionResult result = collectionService.collectToday();
-            redirect.addFlashAttribute("lastResult", result);
-            redirect.addFlashAttribute("message",
-                "Đã cập nhật xong: thêm " + result.getTotalInserted() + " bài mới vào "
-                + result.getDate());
-
-            keepAliveService.deactivateKeepAlive();
-        } catch (Exception e) {
-            redirect.addFlashAttribute("error", "Lỗi khi cập nhật: " + e.getMessage());
-            keepAliveService.deactivateKeepAlive();
-        }
+    public String updateToday(HttpSession session, RedirectAttributes redirect) {
+        collectionService.collectTodayAsync(session);
+        redirect.addFlashAttribute("message",
+            "Đang cập nhật tin trong nền... Vui lòng làm mới trang sau vài phút để xem kết quả.");
         return "redirect:/admin";
     }
 

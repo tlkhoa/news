@@ -26,9 +26,12 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.InflaterInputStream;
+import java.util.concurrent.CompletableFuture;
+import javax.servlet.http.HttpSession;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import org.jsoup.Jsoup;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
@@ -93,6 +96,7 @@ public class RssCollectionService {
     private final PopularityScorerService popularityScorer;
     private final CollectionLogRepository collectionLogRepository;
     private final DailyStatisticsRepository dailyStatisticsRepository;
+    private final KeepAliveService keepAliveService;
     private final DocumentBuilder builder;
     private final TransactionTemplate transactionTemplate;
 
@@ -103,6 +107,7 @@ public class RssCollectionService {
                                 PopularityScorerService popularityScorer,
                                 CollectionLogRepository collectionLogRepository,
                                 DailyStatisticsRepository dailyStatisticsRepository,
+                                KeepAliveService keepAliveService,
                                 PlatformTransactionManager transactionManager) throws Exception {
         this.sourceRepository = sourceRepository;
         this.articleRepository = articleRepository;
@@ -111,6 +116,7 @@ public class RssCollectionService {
         this.popularityScorer = popularityScorer;
         this.collectionLogRepository = collectionLogRepository;
         this.dailyStatisticsRepository = dailyStatisticsRepository;
+        this.keepAliveService = keepAliveService;
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
         factory.setNamespaceAware(true);
         factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
@@ -155,6 +161,26 @@ public class RssCollectionService {
         saveDailyStatistics(today);
 
         return new CollectionResult(today, totalInserted, results);
+    }
+
+    /**
+     * Chạy thu thập tin hôm nay trong nền (@Async).
+     * Trả về ngay để client không bị chờ; kết quả được lưu vào session để hiển thị sau khi xong.
+     */
+    @Async
+    public CompletableFuture<CollectionResult> collectTodayAsync(HttpSession session) {
+        try {
+            keepAliveService.activateKeepAlive();
+            CollectionResult result = collectToday();
+            session.setAttribute("lastResult", result);
+            session.setAttribute("lastResultError", null);
+            return CompletableFuture.completedFuture(result);
+        } catch (Exception e) {
+            session.setAttribute("lastResultError", e.getMessage());
+            return CompletableFuture.failedFuture(e);
+        } finally {
+            keepAliveService.deactivateKeepAlive();
+        }
     }
 
     private LocalDateTime now() {
