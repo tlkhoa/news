@@ -1,5 +1,4 @@
 com\tdk\news\service\ArticleContentExtractor$ExtractedArticle.class
-com\tdk\news\NewsCollectorWorker.class
 com\tdk\news\service\NewsClassifierService$1.class
 com\tdk\news\NewsApplication.class
 com\tdk\news\model\DailyStatistics.class
