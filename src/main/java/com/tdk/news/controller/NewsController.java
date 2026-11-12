@@ -21,9 +21,13 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Controller
 public class NewsController {
+
+    private static final Logger log = LoggerFactory.getLogger(NewsController.class);
 
     private final ArticleRepository articleRepository;
     private final CategoryRepository categoryRepository;
@@ -133,10 +137,10 @@ public class NewsController {
     @GetMapping("/news/{id}/content")
     @ResponseBody
     public Map<String, Object> getArticleContent(@PathVariable Long id) {
-        System.out.println("[ListTTS] GET /news/" + id + "/content called");
+        log.info("[ListTTS] GET /news/" + id + "/content called");
         Optional<NewsArticle> articleOpt = articleRepository.findById(id);
         if (articleOpt.isEmpty()) {
-            System.out.println("[ListTTS] article not found id=" + id);
+            log.info("[ListTTS] article not found id=" + id);
             Map<String, Object> err = new HashMap<>();
             err.put("error", "Không tìm thấy bài viết.");
             err.put("id", id);
@@ -144,7 +148,7 @@ public class NewsController {
         }
 
         NewsArticle article = articleOpt.get();
-        System.out.println("[ListTTS] found article id=" + id + " title=" + article.getTitle()
+        log.info("[ListTTS] found article id=" + id + " title=" + article.getTitle()
             + " contentBlank=" + (article.getContent() == null || article.getContent().isBlank())
             + " fetchedAt=" + article.getContentFetchedAt());
 
@@ -152,19 +156,19 @@ public class NewsController {
         LocalDateTime fetchedAt = article.getContentFetchedAt();
 
         if ((content == null || content.isBlank() || fetchedAt == null) && article.getUrl() != null) {
-            System.out.println("[ListTTS] fetching content from URL: " + article.getUrl());
+            log.info("[ListTTS] fetching content from URL: " + article.getUrl());
             String fetched = contentFetchService.fetchContent(id);
             if (fetched != null && !fetched.isBlank()) {
                 content = fetched;
                 article.setContent(content);
-                System.out.println("[ListTTS] fetched content length=" + fetched.length());
+                log.info("[ListTTS] fetched content length=" + fetched.length());
             } else {
-                System.out.println("[ListTTS] fetch returned null/blank");
+                log.info("[ListTTS] fetch returned null/blank");
             }
         }
 
         String plainText = stripHtml(content == null ? "" : content);
-        System.out.println("[ListTTS] plainText length=" + plainText.length());
+        log.info("[ListTTS] plainText length=" + plainText.length());
         Map<String, Object> result = new HashMap<>();
         result.put("id", id);
         result.put("title", article.getTitle());

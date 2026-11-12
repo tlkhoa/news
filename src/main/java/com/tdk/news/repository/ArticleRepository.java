@@ -9,6 +9,8 @@ import java.util.Optional;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Truy vấn bảng Articles (schema PostgreSQL thực tế của ứng dụng .NET).
@@ -24,6 +26,8 @@ import org.springframework.stereotype.Repository;
  */
 @Repository
 public class ArticleRepository {
+
+    private static final Logger log = LoggerFactory.getLogger(ArticleRepository.class);
 
     private final JdbcTemplate jdbc;
 
@@ -105,7 +109,7 @@ public class ArticleRepository {
                                 : java.sql.Timestamp.valueOf(publishedAt),
             popularityScore == null ? 0 : popularityScore,
             popularityMethod == null ? "RSS" : popularityMethod);
-        System.out.println("[ArticleRepository] insertIfNotExists rows=" + rows + " url=" + url);
+        log.info("[ArticleRepository] insertIfNotExists rows=" + rows + " url=" + url);
         return rows;
     }
 

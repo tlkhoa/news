@@ -4,9 +4,13 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Service
 public class KeepAliveService {
+
+    private static final Logger log = LoggerFactory.getLogger(KeepAliveService.class);
 
     // Biến toàn cục dùng chung cho mọi session, mặc định là false (chưa chạy)
     private final AtomicBoolean isKeepAliveActive = new AtomicBoolean(false);
@@ -35,9 +39,9 @@ public class KeepAliveService {
                 // Bắt buộc dùng URL công khai của Render
                 String url = "https://news-2p7c.onrender.com";
                 restTemplate.getForObject(url, String.class);
-                System.out.println("Đã tự ping thành công để giữ server thức!");
+                log.info("Đã tự ping thành công để giữ server thức!");
             } catch (Exception e) {
-                System.err.println("Lỗi khi tự ping: " + e.getMessage());
+                log.error("Lỗi khi tự ping: " + e.getMessage());
             }
         }
     }

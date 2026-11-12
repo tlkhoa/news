@@ -40,6 +40,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.xml.sax.InputSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Dịch vụ thu thập tin từ RSS của các nguồn đã bật và chèn vào bảng articles.
@@ -57,6 +59,8 @@ import org.xml.sax.InputSource;
  */
 @Service
 public class RssCollectionService {
+
+    private static final Logger log = LoggerFactory.getLogger(RssCollectionService.class);
 
     private static final int HTTP_TIMEOUT_MS = 6000;
     private static final int MAX_RESPONSE_BYTES = 2_000_000; // 2 MB
@@ -177,13 +181,13 @@ public class RssCollectionService {
 //            {
 //                return 0;
 //            }
-            System.out.println("[RSS] Bắt đầu thu thập từ: " + sourceName + " (" + feedUrl + ")");
+            log.info("[RSS] Bắt đầu thu thập từ: " + sourceName + " (" + feedUrl + ")");
             Document doc = fetchAndParse(feedUrl);
             NodeList items = doc.getElementsByTagName("item");
             int itemCount = items.getLength();
-            System.out.println("[RSS] " + sourceName + ": tìm thấy " + itemCount + " bài trong feed");
+            log.info("[RSS] " + sourceName + ": tìm thấy " + itemCount + " bài trong feed");
             if (itemCount == 0) {
-                System.out.println("[RSS] " + sourceName + ": feed trống hoặc không có thẻ <item>, không có bài nào để chèn.");
+                log.info("[RSS] " + sourceName + ": feed trống hoặc không có thẻ <item>, không có bài nào để chèn.");
             }
             int[] inserted = {0};
             int[] skippedDuplicate = {0};
@@ -203,7 +207,7 @@ public class RssCollectionService {
                 String author = extractAuthor(item);
 
                 if (link == null || link.isBlank()) {
-                    System.out.println("[RSS] Bỏ qua bài không có link: " + title);
+                    log.info("[RSS] Bỏ qua bài không có link: " + title);
                     skippedNoLink[0]++;
                     continue;
                 }
@@ -213,7 +217,7 @@ public class RssCollectionService {
 
                 LocalDateTime publishedAt = parseDate(pubDateStr).toLocalDateTime();
 
-                System.out.println("[RSS] Đang chèn: title=" + title + ", link=" + link + ", publishedAt=" + publishedAt);
+                log.info("[RSS] Đang chèn: title=" + title + ", link=" + link + ", publishedAt=" + publishedAt);
 
                 // 1. Phân loại chuyên mục (giống .NET NewsClassifier).
                 Integer categoryId = newsClassifier.classify(title, desc);
@@ -233,12 +237,12 @@ public class RssCollectionService {
                         ArticleContentExtractor.ExtractedArticle extracted = contentExtractor.extract(html, pageUrl);
                         if (extracted != null && extracted.textLength >= 200) {
                             fullContentHtml = extracted.html;
-                            System.out.println("[RSS] Trích xuất toàn văn OK: " + link
+                            log.info("[RSS] Trích xuất toàn văn OK: " + link
                                     + " (textLength=" + extracted.textLength
                                     + ", images=" + extracted.imageCount
                                     + ", hero=" + extracted.heroImageUrl + ")");
                         } else {
-                            System.out.println("[RSS] Trích xuất toàn văn thất bại hoặc quá ngắn: " + link);
+                            log.info("[RSS] Trích xuất toàn văn thất bại hoặc quá ngắn: " + link);
                         }
                     }
                 } catch (Exception e) {
@@ -265,7 +269,7 @@ public class RssCollectionService {
                             fPublishedAt, 0.0, "RSS");
                     if (rows > 0) {
                         inserted[0]++;
-                        System.out.println("[RSS] ĐÃ LƯU DB: " + fTitle
+                        log.info("[RSS] ĐÃ LƯU DB: " + fTitle
                                 + " (categoryId=" + catId + ")");
 
                         // Lưu toàn văn nếu có.
@@ -273,7 +277,7 @@ public class RssCollectionService {
                             Long articleId = articleRepository.findArticleIdByUrl(fLink);
                             if (articleId != null) {
                                 articleRepository.updateContent(articleId, fFullContentHtml, java.time.LocalDateTime.now());
-                                System.out.println("[RSS] Đã lưu toàn văn cho id=" + articleId);
+                                log.info("[RSS] Đã lưu toàn văn cho id=" + articleId);
 
                                 // Nếu RSS không có tác giả, thử trích từ trang chi tiết.
                                 if (fAuthor == null || fAuthor.isBlank()) {
@@ -285,7 +289,7 @@ public class RssCollectionService {
                                             String authorFromPage = contentExtractor.extractAuthor(doc2);
                                             if (authorFromPage != null && !authorFromPage.isBlank()) {
                                                 articleRepository.updateAuthor(articleId, authorFromPage);
-                                                System.out.println("[RSS] Đã lưu tác giả cho id=" + articleId + ": " + authorFromPage);
+                                                log.info("[RSS] Đã lưu tác giả cho id=" + articleId + ": " + authorFromPage);
                                             }
                                         }
                                     } catch (Exception e) {
@@ -311,11 +315,11 @@ public class RssCollectionService {
                         if (articleId != null) {
                             articleRepository.updateArticleMetadata(
                                     articleId, catId, score.total, score.method);
-                            System.out.println("[RSS] Đã cập nhật điểm id=" + articleId
+                            log.info("[RSS] Đã cập nhật điểm id=" + articleId
                                     + " score=" + score.total + " method=" + score.method);
                         }
                     } else {
-                        System.out.println("[RSS] BỎ QUA (trùng URL): " + fTitle);
+                        log.info("[RSS] BỎ QUA (trùng URL): " + fTitle);
                         skippedDuplicate[0]++;
                     }
                     return null;
@@ -334,7 +338,7 @@ public class RssCollectionService {
                 batch.clear();
             }
 
-            System.out.println("[RSS] " + sourceName + ": tổng mới chèn = " + inserted[0]
+            log.info("[RSS] " + sourceName + ": tổng mới chèn = " + inserted[0]
                     + ", bỏ qua trùng URL = " + skippedDuplicate[0]
                     + ", bỏ qua không có link = " + skippedNoLink[0]);
             return inserted[0];
@@ -353,7 +357,7 @@ public class RssCollectionService {
             }
             return null;
         });
-        System.out.println("[RSS] Commit batch " + jobs.size() + " bài vào DB.");
+        log.info("[RSS] Commit batch " + jobs.size() + " bài vào DB.");
     }
 
     /** Lấy văn bản của phần tử con theo tên thẻ (không namespace). */
@@ -474,10 +478,10 @@ public class RssCollectionService {
             String contentEncoding = con.getHeaderField("Content-Encoding");
             String contentType = con.getContentType();
 
-            System.out.println("[RSS] URL: " + feedUrl);
-            System.out.println("[RSS] HTTP: " + status);
-            System.out.println("[RSS] Content-Type: " + contentType);
-            System.out.println("[RSS] Content-Encoding: " + contentEncoding);
+            log.info("[RSS] URL: " + feedUrl);
+            log.info("[RSS] HTTP: " + status);
+            log.info("[RSS] Content-Type: " + contentType);
+            log.info("[RSS] Content-Encoding: " + contentEncoding);
 
             InputStream rawInput = con.getInputStream();
 
@@ -635,7 +639,7 @@ public class RssCollectionService {
                 }
             }
 
-            System.out.println("[RSS] Charset: " + charset);
+            log.info("[RSS] Charset: " + charset);
 
             // Đọc trực tiếp InputStream
             StringBuilder content = new StringBuilder();
