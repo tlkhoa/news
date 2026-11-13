@@ -1,6 +1,7 @@
 com\tdk\news\service\ArticleContentExtractor$ExtractedArticle.class
 com\tdk\news\service\NewsClassifierService$1.class
 com\tdk\news\NewsApplication.class
+com\tdk\news\controller\AdminController$CollectionJob.class
 com\tdk\news\model\DailyStatistics.class
 com\tdk\news\repository\DailyStatisticsRepository.class
 com\tdk\news\service\RssCollectionService$SourceResult.class
@@ -29,3 +30,4 @@ com\tdk\news\service\ContentFetchService.class
 com\tdk\news\model\CollectionLog.class
 com\tdk\news\model\NewsCategory.class
 com\tdk\news\service\ArticleContentExtractor.class
+com\tdk\news\service\RssCollectionService$FeedResult.class

@@ -237,7 +237,7 @@
 
             if (paragraphs.length > 0) {
                 paragraphs.forEach(function (p) {
-                    var pText = p.innerText || p.textContent || '';
+                    var pText = p.textContent || '';
                     if (!pText.trim()) {
                         globalIndex += 1;
                         return;
@@ -260,7 +260,7 @@
 
             // Nếu không có thẻ p, fallback lấy toàn bộ text và tách câu.
             if (segments.length === 0) {
-                var fullText = contentEl.innerText || contentEl.textContent || '';
+                var fullText = contentEl.textContent || '';
                 var sentences = splitSentences(fullText);
                 var idx = 0;
                 sentences.forEach(function (s) {
@@ -854,4 +854,148 @@
             return false;
         };
     })();
+
+    // ---------- Cap nhat tin tung nguon (bat dong bo, cho phep nhieu nguon cung luc) ----------
+    (function initSourceUpdate() {
+        var START_URL = '/admin/update-source/';
+        var STATUS_URL = '/admin/update-source/';
+        var POLL_INTERVAL = 2000;
+        var MAX_POLL = 300; // tối đa ~10 phút polling, sau đó bỏ polling (công việc còn chạy trên server)
+
+        // jobStates[sourceId] = { polling: boolean, pollCount: number, timer: number|null }
+        var jobStates = {};
+
+        function btnOf(sourceId) {
+            return document.querySelector('.btn-update-source[data-id="' + sourceId + '"]');
+        }
+        function statusOf(sourceId) {
+            return document.querySelector('.job-status[data-id="' + sourceId + '"]');
+        }
+
+        function setStatusHtml(sourceId, html, cls) {
+            var el = statusOf(sourceId);
+            if (!el) return;
+            el.innerHTML = html || '';
+            el.className = 'job-status' + (cls ? ' ' + cls : '');
+        }
+
+        function setBtnState(sourceId, running) {
+            var btn = btnOf(sourceId);
+            if (!btn) return;
+            btn.disabled = running;
+            if (running) {
+                btn.classList.add('btn-disabled', 'spinning');
+                btn.title = 'Đang cập nhật, vui lòng đợi...';
+            } else {
+                btn.classList.remove('btn-disabled', 'spinning');
+                btn.title = 'Cập nhật tin của ' + (btn.getAttribute('data-name') || '');
+            }
+        }
+
+        function pollStatus(sourceId, sourceName) {
+            var state = jobStates[sourceId];
+            if (!state || !state.polling) return;
+            state.pollCount = (state.pollCount || 0) + 1;
+
+            fetch(STATUS_URL + sourceId + '/status')
+                .then(function (resp) { return resp.json(); })
+                .then(function (data) {
+                    var st = data.status;
+                    if (st === 'running') {
+                        setStatusHtml(sourceId,
+                            '<span class="status running">&#x23F3; Đang cập nhật...</span>', 'running');
+                        if (state.pollCount < MAX_POLL) {
+                            state.timer = setTimeout(function () {
+                                pollStatus(sourceId, sourceName);
+                            }, POLL_INTERVAL);
+                        } else {
+                            setStatusHtml(sourceId,
+                                '<span class="status warn">&#x26A0; Quá thời gian chờ (công việc còn có thể đang chạy trên server)</span>', 'warn');
+                            setBtnState(sourceId, false);
+                            state.polling = false;
+                        }
+                    } else if (st === 'done') {
+                        setBtnState(sourceId, false);
+                        state.polling = false;
+                        if (state.timer) { clearTimeout(state.timer); state.timer = null; }
+                        var inserted = data.inserted == null ? 0 : data.inserted;
+                        var found = data.found == null ? 0 : data.found;
+                        var note = data.note || 'OK';
+                        setStatusHtml(sourceId,
+                            '<span class="status ok">&#x2705; Xong: ' + inserted + '/' + found + ' bài (' + note + ')</span>', 'ok');
+                        setTimeout(function () { setStatusHtml(sourceId, '', ''); }, 6000);
+                    } else if (st === 'error') {
+                        setBtnState(sourceId, false);
+                        state.polling = false;
+                        if (state.timer) { clearTimeout(state.timer); state.timer = null; }
+                        setStatusHtml(sourceId,
+                            '<span class="status err">&#x274C; Lỗi: ' + (data.error || 'Lỗi không xác định') + '</span>', 'err');
+                        setTimeout(function () { setStatusHtml(sourceId, '', ''); }, 8000);
+                    } else {
+                        // idle / chua co job
+                        setBtnState(sourceId, false);
+                        state.polling = false;
+                    }
+                })
+                .catch(function (err) {
+                    console.error('[SourceUpdate] poll error sourceId=', sourceId, err);
+                    var state2 = jobStates[sourceId];
+                    if (state2 && state2.polling && (state2.pollCount || 0) < MAX_POLL) {
+                        state2.timer = setTimeout(function () {
+                            pollStatus(sourceId, sourceName);
+                        }, POLL_INTERVAL);
+                    }
+                });
+        }
+
+        document.addEventListener('click', function (e) {
+            var btn = e.target.closest('.btn-update-source');
+            if (!btn) return;
+            e.preventDefault();
+            e.stopPropagation();
+
+            var sourceId = btn.getAttribute('data-id');
+            var sourceName = btn.getAttribute('data-name') || 'Nguon';
+            var state = jobStates[sourceId];
+            if (state && state.polling) return; // dang chay, bo qua
+
+            setBtnState(sourceId, true);
+            setStatusHtml(sourceId,
+                '<span class="status running">&#x23F3; Dang gui yeu cau...</span>', 'running');
+            jobStates[sourceId] = { polling: true, pollCount: 0, timer: null };
+
+            fetch(START_URL + sourceId, { method: 'POST',
+                headers: { 'X-Requested-With': 'fetch' } })
+                .then(function (resp) { return resp.json(); })
+                .then(function (data) {
+                    var st = data.status;
+                    if (st === 'started' || st === 'running') {
+                        pollStatus(sourceId, sourceName);
+                    } else {
+                        setBtnState(sourceId, false);
+                        jobStates[sourceId].polling = false;
+                        setStatusHtml(sourceId,
+                            '<span class="status err">&#x274C; Khong the bat dau cap nhat</span>', 'err');
+                    }
+                })
+                .catch(function (err) {
+                    console.error('[SourceUpdate] start error sourceId=', sourceId, err);
+                    setBtnState(sourceId, false);
+                    if (jobStates[sourceId]) jobStates[sourceId].polling = false;
+                    setStatusHtml(sourceId,
+                        '<span class="status err">&#x274C; Loi ket noi khi bat dau cap nhat</span>', 'err');
+                });
+        });
+    })();
+
+    // ---------- An/hien bang thong ke ----------
+    window.toggleDailyStats = function () {
+        var panel = document.getElementById('dailyStatsPanel');
+        if (!panel) return;
+        if (panel.style.display === 'none') {
+            panel.style.display = '';
+        } else {
+            panel.style.display = 'none';
+        }
+    };
 })();

@@ -167,7 +167,12 @@ public class NewsController {
             }
         }
 
-        String plainText = stripHtml(content == null ? "" : content);
+        // Áp dụng cùng quy tắc làm sạch với trang chi tiết (xóa quảng cáo/câu kết)
+        // trước khi chuyển sang văn bản thô để TTS đọc, đảm bảo nội dung nghe khớp
+        // với nội dung hiển thị ở trang chi tiết.
+        String contentToClean = content == null ? "" : content;
+        contentToClean = contentFetchService.cleanForDisplay(contentToClean);
+        String plainText = stripHtml(contentToClean);
         log.info("[ListTTS] plainText length=" + plainText.length());
         Map<String, Object> result = new HashMap<>();
         result.put("id", id);

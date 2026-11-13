@@ -176,6 +176,18 @@ public class ArticleRepository {
         return jdbc.queryForObject(sql, Double.class, date);
     }
 
+    /** Dem so bai cua mot ngay theo mot nguon. */
+    public int countByDateAndSource(LocalDate date, Integer sourceId) {
+        String sql = "SELECT COUNT(*) FROM \"Articles\" WHERE CAST(\"PublishedAt\" AS DATE) = ? AND \"SourceId\" = ?";
+        return jdbc.queryForObject(sql, Integer.class, date, sourceId);
+    }
+
+    /** Trung binh diem popularity cua bai trong mot ngay theo mot nguon. */
+    public Double avgPopularityByDateAndSource(LocalDate date, Integer sourceId) {
+        String sql = "SELECT AVG(\"PopularityScore\") FROM \"Articles\" WHERE CAST(\"PublishedAt\" AS DATE) = ? AND \"SourceId\" = ?";
+        return jdbc.queryForObject(sql, Double.class, date, sourceId);
+    }
+
     /** Trung binh diem popularity cua bai trong mot ngay va chuyen muc. */
     public Double avgPopularityByDateAndCategory(LocalDate date, Integer categoryId) {
         String sql = "SELECT AVG(\"PopularityScore\") FROM \"Articles\" WHERE CAST(\"PublishedAt\" AS DATE) = ? AND \"CategoryId\" = ?";

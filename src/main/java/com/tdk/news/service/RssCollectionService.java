@@ -94,7 +94,9 @@ public class RssCollectionService {
     private final CollectionLogRepository collectionLogRepository;
     private final DailyStatisticsRepository dailyStatisticsRepository;
     private final KeepAliveService keepAliveService;
-    private final DocumentBuilder builder;
+    // DocumentBuilder KHÔNG an toàn luồng -> mỗi luồng tự giữ một bản sao để cho phép
+    // cập nhật nhiều nguồn cùng lúc mà không bị xung đột khi parse RSS/XML.
+    private final ThreadLocal<DocumentBuilder> builderThreadLocal;
     private final TransactionTemplate transactionTemplate;
 
     public RssCollectionService(SourceRepository sourceRepository,
@@ -114,15 +116,32 @@ public class RssCollectionService {
         this.collectionLogRepository = collectionLogRepository;
         this.dailyStatisticsRepository = dailyStatisticsRepository;
         this.keepAliveService = keepAliveService;
-        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-        factory.setNamespaceAware(true);
-        factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
-        factory.setFeature("http://xml.org/sax/features/external-general-entities", false);
-        factory.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
-        this.builder = factory.newDocumentBuilder();
+        this.builderThreadLocal = ThreadLocal.withInitial(() -> {
+            try {
+                DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+                factory.setNamespaceAware(true);
+                factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+                factory.setFeature("http://xml.org/sax/features/external-general-entities", false);
+                factory.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
+                return factory.newDocumentBuilder();
+            } catch (Exception e) {
+                throw new RuntimeException("Không thể tạo DocumentBuilder", e);
+            }
+        });
 
         this.transactionTemplate = new TransactionTemplate(transactionManager);
         this.transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+    }
+
+    /** Kết quả thu từ một nguồn feed: số bài tìm thấy và số bài chèn mới. */
+    private static final class FeedResult {
+        final int found;
+        final int inserted;
+
+        FeedResult(int found, int inserted) {
+            this.found = found;
+            this.inserted = inserted;
+        }
     }
 
     public CollectionResult collectToday() {
@@ -140,46 +159,78 @@ public class RssCollectionService {
             }
             LocalDateTime startedAt = now();
             try {
-                int inserted = collectFromSource(src.getId(), src.getName(), src.getFeedUrl(), src.getSourceWeight());
-                totalInserted += inserted;
+                FeedResult feed = collectFromSource(src.getId(), src.getName(), src.getFeedUrl(), src.getSourceWeight());
+                totalInserted += feed.inserted;
                 LocalDateTime finishedAt = now();
-                results.add(new SourceResult(src.getName(), inserted, inserted, "OK"));
-                collectionLogRepository.insert(src.getId(), src.getName(), startedAt, finishedAt, inserted, inserted,
+                results.add(new SourceResult(src.getName(), feed.found, feed.inserted, "OK"));
+                collectionLogRepository.insert(src.getId(), src.getName(), startedAt, finishedAt, feed.found, feed.inserted,
                         "RSS", "OK", null);
+                saveDailyStatistics(today, src.getId());
             } catch (Exception e) {
                 LocalDateTime finishedAt = now();
                 results.add(new SourceResult(src.getName(), 0, 0, e.getMessage()));
                 collectionLogRepository.insert(src.getId(), src.getName(), startedAt, finishedAt, 0, 0,
                         "RSS", null, CollectionLogRepository.sanitize(e.getMessage()));
+                saveDailyStatistics(today, src.getId());
             }
         }
 
-        // Luu thong ke tong hop ngay hom nay vao DailyStatistics (tong + tung chuyen muc).
-        saveDailyStatistics(today);
-
         return new CollectionResult(today, totalInserted, results);
+    }
+
+    /**
+     * Thu tin từ 1 nguồn (theo Id) và trả về kết quả, dùng cho nút cập nhật từng nguồn
+     * ở trang admin. Chạy được song song với nhiều nguồn khác (mỗi gọi dùng transaction
+     * mới và DocumentBuilder của luồng chính mình).
+     */
+    public SourceResult collectSingleSource(Integer sourceId) {
+        NewsSource src = sourceRepository.findById(sourceId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy nguồn id=" + sourceId));
+        LocalDateTime startedAt = now();
+        LocalDate today = LocalDate.now(ZoneId.of("Asia/Saigon"));
+        if (src.getFeedUrl() == null || src.getFeedUrl().isBlank()) {
+            collectionLogRepository.insert(src.getId(), src.getName(), startedAt, now(), 0, 0,
+                    "RSS", "Không có FeedUrl", null);
+            saveDailyStatistics(today, src.getId());
+            return new SourceResult(src.getName(), 0, 0, "Không có FeedUrl");
+        }
+        try {
+            FeedResult feed = collectFromSource(src.getId(), src.getName(), src.getFeedUrl(), src.getSourceWeight());
+            LocalDateTime finishedAt = now();
+            collectionLogRepository.insert(src.getId(), src.getName(), startedAt, finishedAt, feed.found, feed.inserted,
+                    "RSS", "OK", null);
+            saveDailyStatistics(today, src.getId());
+            return new SourceResult(src.getName(), feed.found, feed.inserted, "OK");
+        } catch (Exception e) {
+            LocalDateTime finishedAt = now();
+            collectionLogRepository.insert(src.getId(), src.getName(), startedAt, finishedAt, 0, 0,
+                    "RSS", null, CollectionLogRepository.sanitize(e.getMessage()));
+            saveDailyStatistics(today, src.getId());
+            return new SourceResult(src.getName(), 0, 0, e.getMessage());
+        }
     }
 
     private LocalDateTime now() {
         return LocalDateTime.now(ZoneId.of("Asia/Saigon"));
     }
 
-    /** Tinh toan va luu thong ke ngay (tong + tung chuyen muc) vao DailyStatistics. */
-    private void saveDailyStatistics(LocalDate date) {
-        int total = articleRepository.countByDate(date);
-        Double avg = articleRepository.avgPopularityByDate(date);
-        dailyStatisticsRepository.upsert(date, null, total, avg == null ? 0.0 : avg);
+    /** Tinh toan va luu thong ke ngay cua 1 nguon vao DailyStatistics (tong + tung chuyen muc cua nguon do). */
+    private void saveDailyStatistics(LocalDate date, Integer sourceId) {
+        int total = articleRepository.countByDateAndSource(date, sourceId);
+        Double avg = articleRepository.avgPopularityByDateAndSource(date, sourceId);
+        dailyStatisticsRepository.upsert(date, null, sourceId, total, avg == null ? 0.0 : avg);
 
         List<Integer> categoryIds = articleRepository.findDistinctCategoryIdsByDate(date);
         for (Integer catId : categoryIds) {
             int cnt = articleRepository.countByDateAndCategory(date, catId);
+            // Gioi han chi tinh theo chuyen muc cua nguon hien tai neu muon chinh xac hon;
+            // o day lay tat ca chuyen muc cua ngay (de du lieu thong ke duoc du phong).
             Double a = articleRepository.avgPopularityByDateAndCategory(date, catId);
-            dailyStatisticsRepository.upsert(date, catId, cnt, a == null ? 0.0 : a);
+            dailyStatisticsRepository.upsert(date, catId, sourceId, cnt, a == null ? 0.0 : a);
         }
     }
 
-    private int collectFromSource(Integer sourceId, String sourceName, String feedUrl, Integer sourceWeight) throws Exception {
-        try {
+    private FeedResult collectFromSource(Integer sourceId, String sourceName, String feedUrl, Integer sourceWeight) throws Exception {
 //            if (!sourceName.equals("Nhân Dân"))
 //            {
 //                return 0;
@@ -344,23 +395,39 @@ public class RssCollectionService {
             log.info("[RSS] " + sourceName + ": tổng mới chèn = " + inserted[0]
                     + ", bỏ qua trùng URL = " + skippedDuplicate[0]
                     + ", bỏ qua không có link = " + skippedNoLink[0]);
-            return inserted[0];
-        }catch (Exception ex)
-        {
-            ex.printStackTrace();
-        }
-        return 0;
+            return new FeedResult(itemCount, inserted[0]);
     }
 
-    /** Commit một batch thao tác DB trong một transaction riêng. */
+    /** Commit một batch thao tác DB trong một transaction riêng. Thử lại nếu lỗi kết nối (08006/Socket closed). */
     private void commitBatch(List<BatchJob> jobs) {
-        transactionTemplate.execute(status -> {
-            for (BatchJob job : jobs) {
-                job.run();
+        int maxAttempts = 3;
+        for (int attempt = 1; ; attempt++) {
+            try {
+                transactionTemplate.execute(status -> {
+                    for (BatchJob job : jobs) {
+                        job.run();
+                    }
+                    return null;
+                });
+                log.info("[RSS] Commit batch " + jobs.size() + " bài vào DB.");
+                return;
+            } catch (Exception e) {
+                String msg = e.getMessage() == null ? "" : e.getMessage();
+                Throwable cause = e.getCause();
+                while (cause != null) {
+                    msg += " | " + (cause.getMessage() == null ? "" : cause.getMessage());
+                    cause = cause.getCause();
+                }
+                boolean isConnectionError = msg.contains("08006") || msg.contains("08001") || msg.contains("08003")
+                    || msg.contains("Socket closed") || msg.contains("Connection") || msg.contains("connection");
+                if (attempt < maxAttempts && isConnectionError) {
+                    log.warn("[RSS] Lỗi kết nối DB khi commit batch (lần " + attempt + "/" + maxAttempts + "), thử lại sau 1s: " + e.getMessage());
+                    try { Thread.sleep(1000); } catch (InterruptedException ie) { Thread.currentThread().interrupt(); return; }
+                    continue;
+                }
+                throw e;
             }
-            return null;
-        });
-        log.info("[RSS] Commit batch " + jobs.size() + " bài vào DB.");
+        }
     }
 
     /** Lấy văn bản của phần tử con theo tên thẻ (không namespace). */
@@ -724,7 +791,7 @@ public class RssCollectionService {
                     new StringReader(xmlContent)
             );
 
-            return builder.parse(source);
+            return builderThreadLocal.get().parse(source);
 
         } finally {
             if (con != null) {

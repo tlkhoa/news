@@ -71,17 +71,29 @@
         </table>
     </div>
 
-    <div th:if="${dailyStats != null and not #lists.isEmpty(dailyStats)}" class="admin-card">
-        <h2 class="admin-title">📊 Thống kê hôm nay</h2>
-        <table class="sources-table">
+    <div th:if="${dailyStats != null and not #lists.isEmpty(dailyStats)}" class="admin-card" id="dailyStatsPanel">
+        <div class="admin-stats-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:10px;">
+            <h2 class="admin-title" style="margin:0;">📊 Thống kê <span th:text="${#temporals.format(selectedDate, 'dd/MM/yyyy')}">—</span></h2>
+            <div style="display:flex; align-items:center; gap:10px;">
+                <form method="get" th:action="@{/admin}" style="margin:0;">
+                    <input type="date" th:value="${selectedDate}" onchange="this.form.submit()"
+                           style="padding:4px 8px; font-size:13px;"/>
+                    <button type="submit" style="display:none;"></button>
+                </form>
+                <button type="button" class="btn btn-outline btn-sm" onclick="toggleDailyStats()"
+                        title="Ẩn/Hiện bảng thống kê">👁️ Ẩn/Hiện</button>
+            </div>
+        </div>
+        <table class="sources-table" id="dailyStatsTable">
             <thead>
-            <tr><th>Chuyên mục</th><th>Số bài</th><th>Điểm trung bình</th></tr>
+            <tr><th>Chuyên mục</th><th>Nguồn</th><th>Số bài</th><th>Điểm trung bình</th></tr>
             </thead>
             <tbody>
             <tr th:each="stat : ${dailyStats}">
                 <td th:text="${stat.categoryId == null ? 'Tất cả chuyên mục' : categoryNames[stat.categoryId]}">—</td>
+                <td th:text="${stat.sourceId == null ? 'Tất cả nguồn' : 'Nguồn #' + stat.sourceId}">—</td>
                 <td th:text="${stat.articleCount}">0</td>
-                <td th:text="${#numbers.format(stat.averagePopularity, '#.##')}">0</td>
+                <td th:text="${stat.averagePopularity == null ? 0 : stat.averagePopularity}">0</td>
             </tr>
             </tbody>
         </table>
@@ -112,7 +124,7 @@
         <h2 class="admin-title">Danh sách nguồn thu thập</h2>
         <table class="sources-table">
             <thead>
-            <tr><th>Nguồn</th><th>Trang chủ</th><th>RSS Feed</th><th>Trạng thái</th></tr>
+            <tr><th>Nguồn</th><th>Trang chủ</th><th>RSS Feed</th><th>Trạng thái</th><th class="actions-col" style="width:170px;">Cập nhật</th></tr>
             </thead>
             <tbody>
             <tr th:each="src : ${sources}">
@@ -122,6 +134,12 @@
                 <td>
                     <button class="toggle" th:class="${src.enabled} ? 'enabled' : ''"
                             th:text="${src.enabled} ? 'Bật' : 'Tắt'">Bật</button>
+                </td>
+                <td class="actions-col" style="text-align:center;">
+                    <button class="btn btn-sm btn-update-source" type="button"
+                            th:data-id="${src.id}" th:data-name="${src.name}"
+                            th:title="|Cập nhật tin của ${src.name}|">⟳</button>
+                    <span class="job-status" th:data-id="${src.id}"></span>
                 </td>
             </tr>
             </tbody>

@@ -6,23 +6,27 @@ import java.time.LocalDate;
  * Thong ke tong hop cua mot ngay (port tu DailyStatistics o C#).
  * CategoryId = NULL la tong chung ca trang; CategoryId co gia tri la thong ke
  * theo tung chuyen muc.
+ * SourceId = NULL la tong chung tat ca nguon; SourceId co gia tri la thong ke
+ * theo tung nguon thu thap (de tranh xung dot ON CONFLICT khi cap nhat nhieu nguon cung luc).
  * (Lop nay khong su dung Lombok de dam bao hoat dong tren tat ca moi truong build.)
  */
 public class DailyStatistics {
     private Long id;
     private LocalDate date;
     private Integer categoryId;
+    private Integer sourceId;
     private int articleCount;
     private double averagePopularity;
 
     public DailyStatistics() {
     }
 
-    public DailyStatistics(Long id, LocalDate date, Integer categoryId, int articleCount,
-            double averagePopularity) {
+    public DailyStatistics(Long id, LocalDate date, Integer categoryId, Integer sourceId,
+            int articleCount, double averagePopularity) {
         this.id = id;
         this.date = date;
         this.categoryId = categoryId;
+        this.sourceId = sourceId;
         this.articleCount = articleCount;
         this.averagePopularity = averagePopularity;
     }
@@ -33,6 +37,8 @@ public class DailyStatistics {
     public void setDate(LocalDate date) { this.date = date; }
     public Integer getCategoryId() { return categoryId; }
     public void setCategoryId(Integer categoryId) { this.categoryId = categoryId; }
+    public Integer getSourceId() { return sourceId; }
+    public void setSourceId(Integer sourceId) { this.sourceId = sourceId; }
     public int getArticleCount() { return articleCount; }
     public void setArticleCount(int articleCount) { this.articleCount = articleCount; }
     public double getAveragePopularity() { return averagePopularity; }
