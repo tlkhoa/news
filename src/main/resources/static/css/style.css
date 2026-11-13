@@ -483,6 +483,24 @@ img { max-width: 100%; height: auto; display: block; }
 .job-status .err { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
 .job-status .warn { background: #fffbeb; color: #713f12; border: 1px solid #fde68a; }
 
+/* ---------- Phan trang nhat ky thu thuat ---------- */
+.pagination .btn {
+    min-width: 110px;
+}
+.pagination .btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Hang con chi tiet nguon o bang thong ke */
+.cat-detail-row {
+    background: #fafafa;
+    border-top: 2px solid var(--color-primary);
+}
+.cat-detail-row td {
+    border-top: none;
+}
+
 /* ---------- Responsive fine-tuning ---------- */
 @media (max-width: 480px) {
     .container { padding: 12px; }

@@ -1,8 +1,12 @@
 package com.tdk.news.service;
 
 import com.tdk.news.repository.ArticleRepository;
+import com.tdk.news.service.ArticleContentExtractor;
+import java.io.BufferedReader;
+import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -10,8 +14,11 @@ import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.InflaterInputStream;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.AllArgsConstructor;
@@ -78,9 +85,12 @@ public class ContentFetchService {
         Pattern.CASE_INSENSITIVE);
 
     private final ArticleRepository articleRepository;
+    private final ArticleContentExtractor articleContentExtractor;
 
-    public ContentFetchService(ArticleRepository articleRepository) {
+    public ContentFetchService(ArticleRepository articleRepository,
+                               ArticleContentExtractor articleContentExtractor) {
         this.articleRepository = articleRepository;
+        this.articleContentExtractor = articleContentExtractor;
     }
 
     /**
@@ -91,6 +101,15 @@ public class ContentFetchService {
      * @return nội dung toàn văn (đã làm sạch), hoặc null nếu không lấy được.
      */
     public String fetchContent(Long id) {
+        return fetchContent(id, false);
+    }
+
+    /**
+     * Lấy toàn văn của bài viết theo id.
+     * Nếu force=true → bỏ qua nội dung đã lưu trong DB, fetch lại từ URL và ghi đè.
+     * Nếu force=false → nếu DB đã có nội dung → trả về luôn, không gọi mạng.
+     */
+    public String fetchContent(Long id, boolean force) {
         var articleOpt = articleRepository.findById(id);
         if (articleOpt.isEmpty()) {
             return null;
@@ -100,48 +119,58 @@ public class ContentFetchService {
         String content = article.getContent();
         LocalDateTime fetchedAt = article.getContentFetchedAt();
 
-        if (content != null && !content.isBlank() && fetchedAt != null) {
+        if (!force && content != null && !content.isBlank() && fetchedAt != null) {
             // Đã có nội dung trong DB → trả về luôn, không gọi mạng.
             return cleanForDisplay(content);
         }
 
         String url = article.getUrl();
         if (url == null || url.isBlank()) {
+            System.err.println("[ContentFetch] id=" + id + " url trống");
             return null;
         }
+
+        System.err.println("[ContentFetch] id=" + id + " force=" + force + " url=" + url);
 
         try {
             String html = fetchHtml(url);
             if (html == null || html.isBlank()) {
+                System.err.println("[ContentFetch] id=" + id + " fetchHtml trả về null/blank");
+                return null;
+            }
+            System.err.println("[ContentFetch] id=" + id + " fetchHtml OK, length=" + html.length());
+
+            // Dùng cùng phương pháp trích xuất với chức năng cập nhật danh sách tin tức (ArticleContentExtractor / Jsoup)
+            URL pageUrl = new URL(url);
+            ArticleContentExtractor.ExtractedArticle extracted = articleContentExtractor.extract(html, pageUrl);
+            if (extracted == null || extracted.textLength < 200) {
+                System.err.println("[ContentFetch] id=" + id + " extractor trả về null/quá ngắn (textLength="
+                        + (extracted == null ? 0 : extracted.textLength) + ")");
                 return null;
             }
 
-            String extracted = extractMainContent(html);
-            if (extracted == null || extracted.isBlank()) {
-                return null;
-            }
-
-            // Chỉ giữ ảnh cùng domain với trang gốc, loại bỏ ảnh quảng cáo/tracking từ domain khác.
-            extracted = filterExternalImages(extracted, url);
-            // Xoá đoạn quảng cáo/kết bài (từ ảnh mediacdn.vn đầu tiên đến câu chúc kết) trước khi lưu/hiển thị.
-            extracted = cleanForDisplay(extracted);
+            String contentToStore = extracted.html == null ? "" : extracted.html.trim();
+            System.err.println("[ContentFetch] id=" + id + " extractor OK, textLength=" + extracted.textLength
+                    + ", images=" + extracted.imageCount + ", hero=" + extracted.heroImageUrl);
 
             // Lưu vào DB để lần sau không cần fetch lại.
-            articleRepository.updateContent(id, extracted, LocalDateTime.now());
-            return extracted;
+            articleRepository.updateContent(id, contentToStore, LocalDateTime.now());
+            return contentToStore;
         } catch (Exception e) {
             System.err.println("[ContentFetch] Lỗi fetch nội dung id=" + id + " url=" + url + " | " + e.getMessage());
             return null;
         }
     }
 
-    /** Fetch HTML từ URL (giống pattern đã dùng trong RssCollectionService). */
+    /** Fetch HTML từ URL, tự giải nén gzip/deflate nếu server nén phản hồi. */
     private String fetchHtml(String urlStr) throws IOException {
         URL url = new URL(urlStr);
         HttpURLConnection con = (HttpURLConnection) url.openConnection();
         con.setRequestMethod("GET");
         con.setRequestProperty("User-Agent", USER_AGENT);
         con.setRequestProperty("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
+        // Báo cho server biết chúng ta chấp nhận dữ liệu nén
+        con.setRequestProperty("Accept-Encoding", "gzip, deflate, identity");
         con.setConnectTimeout(HTTP_TIMEOUT_MS);
         con.setReadTimeout(HTTP_TIMEOUT_MS);
         con.setInstanceFollowRedirects(true);
@@ -151,17 +180,71 @@ public class ContentFetchService {
             throw new IOException("HTTP " + code);
         }
 
-        try (InputStream in = con.getInputStream()) {
-            byte[] buf = new byte[8192];
-            int total = 0;
-            StringBuilder sb = new StringBuilder();
-            int read;
-            while ((read = in.read(buf)) != -1) {
-                sb.append(new String(buf, 0, read, StandardCharsets.UTF_8));
-                total += read;
-                if (total > MAX_RESPONSE_BYTES) {
-                    throw new IOException("Phản hồi quá lớn (> " + MAX_RESPONSE_BYTES + " bytes)");
+        String contentEncoding = con.getHeaderField("Content-Encoding");
+        InputStream rawInput = con.getInputStream();
+        InputStream decodedInput = rawInput;
+
+        if (contentEncoding != null) {
+            String encoding = contentEncoding.toLowerCase(Locale.ROOT);
+            String[] encodings = encoding.split(",");
+            // Giải mã theo thứ tự ngược (theo tiêu chuẩn HTTP)
+            for (int i = encodings.length - 1; i >= 0; i--) {
+                String item = encodings[i].trim();
+                if (item.isEmpty() || "identity".equals(item)) {
+                    continue;
                 }
+                if ("gzip".equals(item) || "x-gzip".equals(item)) {
+                    decodedInput = new GZIPInputStream(decodedInput);
+                } else if ("deflate".equals(item)) {
+                    decodedInput = new InflaterInputStream(decodedInput);
+                } else {
+                    throw new IOException("Unsupported Content-Encoding: " + item);
+                }
+            }
+        }
+
+        // Giới hạn kích thước phản hồi để tránh tấn công bởi dữ liệu quá lớn
+        final int MAX_BYTES = MAX_RESPONSE_BYTES;
+        InputStream limitedInput = new FilterInputStream(decodedInput) {
+            private int total = 0;
+
+            @Override
+            public int read() throws IOException {
+                int value = super.read();
+                if (value != -1) {
+                    total++;
+                    if (total > MAX_BYTES) {
+                        throw new IOException("Response exceeds " + MAX_BYTES + " bytes");
+                    }
+                }
+                return value;
+            }
+
+            @Override
+            public int read(byte[] b, int off, int len) throws IOException {
+                if (len == 0) {
+                    return 0;
+                }
+                int remaining = MAX_BYTES - total;
+                int n = super.read(b, off, Math.min(len, remaining + 1));
+                if (n == -1) {
+                    return -1;
+                }
+                total += n;
+                if (total > MAX_BYTES) {
+                    throw new IOException("Response exceeds " + MAX_BYTES + " bytes");
+                }
+                return n;
+            }
+        };
+
+        try (BufferedReader reader = new BufferedReader(
+                new InputStreamReader(limitedInput, StandardCharsets.UTF_8))) {
+            StringBuilder sb = new StringBuilder();
+            char[] buf = new char[8192];
+            int read;
+            while ((read = reader.read(buf)) != -1) {
+                sb.append(buf, 0, read);
             }
             return sb.toString();
         } finally {

@@ -5,15 +5,20 @@ import com.tdk.news.repository.CollectionLogRepository;
 import com.tdk.news.repository.CategoryRepository;
 import com.tdk.news.repository.DailyStatisticsRepository;
 import com.tdk.news.repository.SourceRepository;
+import com.tdk.news.model.CollectionLog;
+import com.tdk.news.model.DailyStatistics;
 import com.tdk.news.service.KeepAliveService;
 import com.tdk.news.service.RssCollectionService;
 import com.tdk.news.service.RssCollectionService.CollectionResult;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -100,14 +105,29 @@ public class AdminController {
 
     /** Trang quản trị: danh sách nguồn và nút cập nhật tin hôm nay. */
     @GetMapping("/admin")
-    public String admin(@RequestParam(required = false) String date, Model model) {
+    public String admin(@RequestParam(required = false) String date,
+                        @RequestParam(defaultValue = "0") int page,
+                        Model model) {
         LocalDate today = LocalDate.now(ZoneId.of("Asia/Saigon"));
         LocalDate selectedDate = (date == null || date.isBlank()) ? today : LocalDate.parse(date);
+        int pageSize = 20;
+
         model.addAttribute("pageTitle", "Quản trị");
         model.addAttribute("sources", sourceRepository.findAll());
         model.addAttribute("today", today);
         model.addAttribute("selectedDate", selectedDate);
-        model.addAttribute("collectionLogs", collectionLogRepository.findRecent(50));
+
+        // ---------- Phân trang nhật ký thu harvested ----------
+        long totalLogs = collectionLogRepository.countAll();
+        int totalPages = (int) Math.ceil((double) totalLogs / pageSize);
+        if (page < 0) page = 0;
+        if (page >= totalPages && totalPages > 0) page = totalPages - 1;
+        List<CollectionLog> logs = collectionLogRepository.findPaged(page * pageSize, pageSize);
+        model.addAttribute("collectionLogs", logs);
+        model.addAttribute("currentPage", page);
+        model.addAttribute("totalPages", totalPages);
+        model.addAttribute("pageSize", pageSize);
+        model.addAttribute("totalLogs", totalLogs);
 
         Map<String, Integer> nameToId = categoryRepository.findAllNameToId();
         Map<Integer, String> categoryNames = new HashMap<>();
@@ -123,10 +143,75 @@ public class AdminController {
         }
         model.addAttribute("sourceNames", sourceNames);
 
-        model.addAttribute("dailyStats", dailyStatisticsRepository.findByDate(selectedDate));
+        // ---------- Thống kê theo chuyên mục (có thể expand xem chi tiết theo nguồn) ----------
+        List<DailyStatistics> allStats = dailyStatisticsRepository.findByDate(selectedDate);
+
+        // Danh sách chuyên mục có dữ liệu
+        List<CategoryStat> categoryStats = new ArrayList<>();
+        Map<Integer, List<DailyStatistics>> sourceStatsByCategory = new HashMap<>();
+
+        Set<Integer> categoryIds = new HashSet<>();
+        for (DailyStatistics s : allStats) {
+            if (s.getCategoryId() != null) {
+                categoryIds.add(s.getCategoryId());
+            }
+            if (s.getCategoryId() != null && s.getSourceId() != null) {
+                sourceStatsByCategory.computeIfAbsent(s.getCategoryId(), k -> new ArrayList<>()).add(s);
+            }
+        }
+
+        for (Integer catId : categoryIds) {
+            String catName = categoryNames.getOrDefault(catId, "Chuyên mục #" + catId);
+            // Ưu tiên hàng tổng của chuyên mục (sourceId == null)
+            DailyStatistics catTotal = null;
+            int totalArticles = 0;
+            double totalAvg = 0.0;
+            int avgCount = 0;
+            for (DailyStatistics s : allStats) {
+                if (s.getCategoryId() != null && s.getCategoryId().equals(catId) && s.getSourceId() == null) {
+                    catTotal = s;
+                    break;
+                }
+            }
+            if (catTotal != null) {
+                totalArticles = catTotal.getArticleCount();
+                totalAvg = catTotal.getAveragePopularity();
+            } else {
+                // Tính tổng từ các hàng nguồn trong chuyên mục
+                for (DailyStatistics s : sourceStatsByCategory.getOrDefault(catId, List.of())) {
+                    totalArticles += s.getArticleCount();
+                    totalAvg += s.getAveragePopularity();
+                    avgCount++;
+                }
+                if (avgCount > 0) totalAvg = totalAvg / avgCount;
+            }
+            categoryStats.add(new CategoryStat(catId, catName, totalArticles, totalAvg));
+        }
+
+        // Sắp xếp theo số bài giảm dần
+        categoryStats.sort((a, b) -> Integer.compare(b.totalArticles, a.totalArticles));
+
+        model.addAttribute("categoryStats", categoryStats);
+        model.addAttribute("sourceStatsByCategory", sourceStatsByCategory);
+
         model.addAttribute("keepAliveActive", keepAliveService.isKeepAliveActive());
-        // lastResult được thêm bởi flash attribute sau khi POST; nếu chưa có thì để null.
         return "admin";
+    }
+
+    /** Thống kê tóm tắt một chuyên mục (dùng hiển thị trên trang admin). */
+    public static class CategoryStat {
+        public Integer categoryId;
+        public String categoryName;
+        public int totalArticles;
+        public double averagePopularity;
+
+        public CategoryStat(Integer categoryId, String categoryName, int totalArticles,
+                double averagePopularity) {
+            this.categoryId = categoryId;
+            this.categoryName = categoryName;
+            this.totalArticles = totalArticles;
+            this.averagePopularity = averagePopularity;
+        }
     }
 
     /** Chạy thu thập tin hôm nay từ các nguồn RSS đã bật (chạy đồng bộ). */

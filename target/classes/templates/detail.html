@@ -51,6 +51,15 @@
         </div>
         <div th:if="${article.content == null}" class="empty">
             <p>Chưa có nội dung toàn văn trong cơ sở dữ liệu.</p>
+        </div>
+        <form th:if="${article.content != null}" th:action="@{/news/{id}/fetch-content(id=${article.id})}" method="post"
+              style="margin-top:16px;">
+            <button class="btn btn-outline btn-sm" type="submit"
+                    onclick="return confirm('Bạn có chắc muốn tải lại toàn văn từ website gốc? Nội dung cũ sẽ bị ghi đè.');">
+                ↻ Tải lại toàn văn từ website gốc
+            </button>
+        </form>
+        <div th:if="${article.content == null}" class="empty">
             <form th:action="@{/news/{id}/fetch-content(id=${article.id})}" method="post">
                 <button class="btn btn-primary" type="submit">⬇️ Tải toàn văn từ website gốc</button>
             </form>

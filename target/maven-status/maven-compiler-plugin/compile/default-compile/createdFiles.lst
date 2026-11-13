@@ -9,12 +9,14 @@ com\tdk\news\service\VietnameseTextUtils.class
 com\tdk\news\service\NewsClassifierService.class
 com\tdk\news\repository\SourceRepository.class
 com\tdk\news\service\RssCollectionService.class
+com\tdk\news\service\ContentFetchService$1.class
 com\tdk\news\controller\AdminController.class
 com\tdk\news\service\PopularityScorerService$ScoreResult.class
 com\tdk\news\repository\CollectionLogRepository.class
 com\tdk\news\model\NewsSource.class
 com\tdk\news\service\RssCollectionService$CollectionResult.class
 com\tdk\news\controller\GlobalData.class
+com\tdk\news\controller\AdminController$CategoryStat.class
 com\tdk\news\service\PopularityScorerService.class
 com\tdk\news\service\KeepAliveService.class
 com\tdk\news\service\PopularityScorerService$Component.class

@@ -191,12 +191,12 @@ public class NewsController {
                    .trim();
     }
 
-    /** Thủ công tải lại toàn văn cho bài viết (dùng khi nút "Tải toàn văn" được nhấn). */
+    /** Thủ công tải lại toàn văn cho bài viết (bỏ qua nội dung đã lưu, fetch lại từ website gốc). */
     @PostMapping("/news/{id}/fetch-content")
     public String fetchContent(@PathVariable Long id, RedirectAttributes redirect) {
-        String fetched = contentFetchService.fetchContent(id);
+        String fetched = contentFetchService.fetchContent(id, true);
         if (fetched != null && !fetched.isBlank()) {
-            redirect.addFlashAttribute("message", "Đã tải toàn văn thành công.");
+            redirect.addFlashAttribute("message", "Đã tải lại toàn văn thành công từ website gốc.");
         } else {
             redirect.addFlashAttribute("error", "Không lấy được nội dung từ website gốc.");
         }

@@ -998,4 +998,29 @@
             panel.style.display = 'none';
         }
     };
+
+    // ---------- An/hien chi tiet nguon theo chuyen muc ----------
+    window.toggleCatDetail = function (catId) {
+        var detailRow = document.getElementById('cat-detail-' + catId);
+        var btn = document.getElementById('btn-cat-' + catId);
+        if (!detailRow || !btn) return;
+
+        // An tat ca hang con khac truoc khi hien hang duoc chon
+        document.querySelectorAll('[id^="cat-detail-"]').forEach(function (row) {
+            row.style.display = 'none';
+        });
+        document.querySelectorAll('[id^="btn-cat-"]').forEach(function (b) {
+            b.textContent = '▶ Xem nguồn';
+        });
+
+        // Hien/an hang con cua chuyen muc duoc chon
+        var hidden = detailRow.style.display === 'none';
+        if (hidden) {
+            detailRow.style.display = '';
+            btn.textContent = '▼ Ẩn nguồn';
+        } else {
+            detailRow.style.display = 'none';
+            btn.textContent = '▶ Xem nguồn';
+        }
+    };
 })();

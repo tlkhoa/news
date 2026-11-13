@@ -57,6 +57,22 @@ public class CollectionLogRepository {
         return jdbc.query(sql, collectionLogMapper(), limit);
     }
 
+    /** Lay ban ghi nhat ky co phan trang (offset, limit), moi nhat dau. */
+    public List<CollectionLog> findPaged(int offset, int limit) {
+        String sql =
+                "SELECT \"Id\", \"SourceId\", \"SourceName\", \"StartedAt\", \"FinishedAt\", \"ItemsFound\", \"ItemsInserted\", \"CollectionMethod\", \"Note\", \"Error\"\n" +
+                "FROM \"CollectionLogs\"\n" +
+                "ORDER BY \"StartedAt\" DESC\n" +
+                "LIMIT ? OFFSET ?";
+        return jdbc.query(sql, collectionLogMapper(), limit, offset);
+    }
+
+    /** Dem tong so ban ghi nhat ky. */
+    public int countAll() {
+        String sql = "SELECT COUNT(*) FROM \"CollectionLogs\"";
+        return jdbc.queryForObject(sql, Integer.class);
+    }
+
     /** Xoa tat ca nhat ky trong mot ngay (dung khi xoa tin hom nay). */
     public int deleteByDate(LocalDate date) {
         String sql = "DELETE FROM \"CollectionLogs\" WHERE CAST(\"StartedAt\" AS DATE) = ?";

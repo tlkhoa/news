@@ -52,15 +52,17 @@
         </button>
     </form>
 
+    <!-- Nhật ký thu harvested gần đây (có phân trang) -->
     <div th:if="${collectionLogs != null and not #lists.isEmpty(collectionLogs)}" class="admin-card">
         <h2 class="admin-title">📋 Nhật ký thu thập gần đây</h2>
         <table class="sources-table">
             <thead>
-            <tr><th>Thời gian bắt đầu</th><th>Nguồn</th><th>Tìm thấy</th><th>Chèn mới</th><th>Phương thức</th><th>Ghi chú / Lỗi</th></tr>
+            <tr><th style="width:50px;">STT</th><th>Thời gian bắt đầu</th><th>Nguồn</th><th>Tìm thấy</th><th>Chèn mới</th><th>Phương thức</th><th>Ghi chú / Lỗi</th></tr>
             </thead>
             <tbody>
-            <tr th:each="log : ${collectionLogs}">
-                <td><span class="small" th:text="${log.startedAt}">—</span></td>
+            <tr th:each="log, stat : ${collectionLogs}">
+                <td th:text="${currentPage * pageSize + stat.index + 1}">1</td>
+                <td><span class="small" th:text="${#temporals.format(log.startedAt, 'dd/MM/yyyy HH:mm:ss')}">—</span></td>
                 <td th:text="${log.sourceName}">—</td>
                 <td th:text="${log.itemsFound}">0</td>
                 <td th:text="${log.itemsInserted}">0</td>
@@ -69,9 +71,21 @@
             </tr>
             </tbody>
         </table>
+
+        <!-- Phan trang -->
+        <div class="pagination" style="margin-top:12px; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+            <span class="small" style="font-weight:600;">Trang <span th:text="${currentPage + 1}">1</span> / <span th:text="${totalPages}">1</span> (tổng <span th:text="${totalLogs}">0</span> bản ghi)</span>
+            <button type="button" class="btn btn-outline btn-sm"
+                    th:disabled="${currentPage == 0}"
+                    onclick="location.href='@{/admin(date=${selectedDate}, page=${currentPage - 1})}'">← Trang trước</button>
+            <button type="button" class="btn btn-outline btn-sm"
+                    th:disabled="${currentPage >= totalPages - 1}"
+                    onclick="location.href='@{/admin(date=${selectedDate}, page=${currentPage + 1})}'">Trang sau →</button>
+        </div>
     </div>
 
-    <div th:if="${dailyStats != null and not #lists.isEmpty(dailyStats)}" class="admin-card" id="dailyStatsPanel">
+    <!-- Thong ke theo chuyen muc (co the expand xem chi tiet theo nguon) -->
+    <div th:if="${categoryStats != null and not #lists.isEmpty(categoryStats)}" class="admin-card" id="dailyStatsPanel">
         <div class="admin-stats-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:10px;">
             <h2 class="admin-title" style="margin:0;">📊 Thống kê <span th:text="${#temporals.format(selectedDate, 'dd/MM/yyyy')}">—</span></h2>
             <div style="display:flex; align-items:center; gap:10px;">
@@ -86,14 +100,39 @@
         </div>
         <table class="sources-table" id="dailyStatsTable">
             <thead>
-            <tr><th>Chuyên mục</th><th>Nguồn</th><th>Số bài</th><th>Điểm trung bình</th></tr>
+            <tr><th>Chuyên mục</th><th>Số bài</th><th>Điểm trung bình</th><th style="width:120px;">Chi tiết</th></tr>
             </thead>
             <tbody>
-            <tr th:each="stat : ${dailyStats}">
-                <td th:text="${stat.categoryId == null ? 'Tất cả chuyên mục' : categoryNames[stat.categoryId]}">—</td>
-                <td th:text="${stat.sourceId == null ? 'Tất cả nguồn' : sourceNames[stat.sourceId]}">—</td>
-                <td th:text="${stat.articleCount}">0</td>
-                <td th:text="${stat.averagePopularity == null ? 0 : stat.averagePopularity}">0</td>
+            <tr th:each="cat : ${categoryStats}" th:attr="data-catid=${cat.categoryId}">
+                <td><strong th:text="${cat.categoryName}">—</strong></td>
+                <td th:text="${cat.totalArticles}">0</td>
+                <td th:text="${cat.averagePopularity == null ? 0 : cat.averagePopularity}">0</td>
+                <td style="text-align:center;">
+                    <button type="button" class="btn btn-outline btn-sm"
+                            th:onclick="'toggleCatDetail(' + ${cat.categoryId} + ')'"
+                            th:id="'btn-cat-' + ${cat.categoryId}">▶ Xem nguồn</button>
+                </td>
+            </tr>
+            <!-- Hang con chua chi tiet nguon cua chuyen muc (mac dinh an) -->
+            <tr th:each="cat : ${categoryStats}" th:id="'cat-detail-' + ${cat.categoryId}"
+                th:if="${sourceStatsByCategory != null and sourceStatsByCategory[cat.categoryId] != null}"
+                class="cat-detail-row"
+                style="display:none;">
+                <td colspan="4" style="padding:0;">
+                    <table class="sources-table" style="margin:0; background:#fafafa;">
+                        <thead>
+                        <tr><th>#</th><th>Nguồn</th><th>Số bài</th><th>Điểm trung bình</th></tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="srcStat, stat : ${sourceStatsByCategory[cat.categoryId]}">
+                            <td th:text="${stat.index + 1}">—</td>
+                            <td th:text="${sourceNames[srcStat.sourceId]}">—</td>
+                            <td th:text="${srcStat.articleCount}">0</td>
+                            <td th:text="${srcStat.averagePopularity == null ? 0 : srcStat.averagePopularity}">0</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </td>
             </tr>
             </tbody>
         </table>
@@ -102,8 +141,8 @@
     <div th:if="${lastResult != null and lastResult.sources != null and not #lists.isEmpty(lastResult.sources)}" class="admin-card">
         <h2 class="admin-title">Kết quả cập nhật lần gần nhất</h2>
         <div class="detail-meta" style="border-bottom:none;padding-bottom:0;margin-bottom:12px;">
-            <div class="item"><span class="label">Ngày</span> <span th:text="${#temporals.format(lastResult.date, 'dd/MM/yyyy')}">—</span></div>
-            <div class="item"><span class="label">Tổng mới</span> <span th:text="${lastResult.totalInserted}">0</span> bài</div>
+            <div class="item"><span class="label">Ngay</span> <span th:text="${#temporals.format(lastResult.date, 'dd/MM/yyyy')}">—</span></div>
+            <div class="item"><span class="label">Tong moi</span> <span th:text="${lastResult.totalInserted}">0</span> bài</div>
         </div>
         <table class="sources-table">
             <thead>
