@@ -174,8 +174,8 @@ public class RssCollectionService {
         this.transactionTemplate = new TransactionTemplate(transactionManager);
         this.transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
 
-        // Khởi động luồng nền poll queue commit batch.
-        this.scheduler.scheduleAtFixedRate(this::flushPendingQueue, 5, 5, TimeUnit.SECONDS);
+        // Khởi động luồng nền poll queue commit batch (chỉ commit khi đủ 100).
+        this.scheduler.scheduleAtFixedRate(() -> flushPendingQueue(false), 5, 5, TimeUnit.SECONDS);
     }
 
     /** Kết quả thu từ một nguồn feed: số bài tìm thấy và số bài chèn mới. */
@@ -237,6 +237,7 @@ public class RssCollectionService {
             collectionLogRepository.insert(src.getId(), src.getName(), startedAt, now(), 0, 0,
                     "RSS", "Không có FeedUrl", null);
             saveDailyStatistics(today, src.getId());
+            flushPendingQueueNow();
             return new SourceResult(src.getName(), 0, 0, "Không có FeedUrl");
         }
         try {
@@ -245,12 +246,15 @@ public class RssCollectionService {
             collectionLogRepository.insert(src.getId(), src.getName(), startedAt, finishedAt, feed.found, feed.inserted,
                     "RSS", "OK", null);
             saveDailyStatistics(today, src.getId());
+            // Xử lý xong hết bài của source này → commit ngay tất cả phần dư trong hàng đợi vào DB.
+            flushPendingQueueNow();
             return new SourceResult(src.getName(), feed.found, feed.inserted, "OK");
         } catch (Exception e) {
             LocalDateTime finishedAt = now();
             collectionLogRepository.insert(src.getId(), src.getName(), startedAt, finishedAt, 0, 0,
                     "RSS", null, CollectionLogRepository.sanitize(e.getMessage()));
             saveDailyStatistics(today, src.getId());
+            flushPendingQueueNow();
             return new SourceResult(src.getName(), 0, 0, e.getMessage());
         }
     }
@@ -368,14 +372,25 @@ public class RssCollectionService {
             return new FeedResult(itemCount, inserted[0]);
     }
 
-    /** Lấy tối đa 100 model từ hàng đợi chung và commit vào DB trong 1 transaction. Chạy bởi luồng nền mỗi 5 giây. */
-    private void flushPendingQueue() {
+    /**
+     * Lấy model từ hàng đợi chung và commit vào DB.
+     *  - force=false (luồng nền): chỉ commit nếu hàng đợi đã đủ 100 bài.
+     *  - force=true (flushPendingQueueNow): commit tất cả phần dư dù chưa đủ 100.
+     * Nếu poll ra chưa đủ 100 và không force → trả lại toàn bộ vào hàng đợi, không commit.
+     */
+    private void flushPendingQueue(boolean force) {
         List<PendingArticle> batch = new ArrayList<>(BATCH_COMMIT_SIZE);
         PendingArticle item;
-        while ((item = pendingQueue.poll()) != null && batch.size() < BATCH_COMMIT_SIZE) {
+        int maxTake = force ? Integer.MAX_VALUE : BATCH_COMMIT_SIZE;
+        while ((item = pendingQueue.poll()) != null && batch.size() < maxTake) {
             batch.add(item);
         }
         if (batch.isEmpty()) {
+            return;
+        }
+        // Không force và chưa đủ 100 → trả lại toàn bộ, không commit.
+        if (!force && batch.size() < BATCH_COMMIT_SIZE) {
+            pendingQueue.addAll(batch);
             return;
         }
         try {
@@ -391,7 +406,7 @@ public class RssCollectionService {
 
     /** Commit ngay tất cả phần dư trong hàng đợi (dù chưa đủ 100) khi hết request active. */
     public void flushPendingQueueNow() {
-        flushPendingQueue();
+        flushPendingQueue(true);
     }
 
     /** Commit một batch PendingArticle vào DB trong một transaction riêng. Thử lại nếu lỗi kết nối. */
