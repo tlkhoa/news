@@ -114,6 +114,15 @@ public class AdminController {
         nameToId.forEach((name, id) -> categoryNames.put(id, name));
         model.addAttribute("categoryNames", categoryNames);
 
+        // Map id nguon -> ten nguon de hien thi trong bang thong ke
+        Map<Integer, String> sourceNames = new HashMap<>();
+        for (com.tdk.news.model.NewsSource s : sourceRepository.findAll()) {
+            if (s.getId() != null) {
+                sourceNames.put(s.getId(), s.getName());
+            }
+        }
+        model.addAttribute("sourceNames", sourceNames);
+
         model.addAttribute("dailyStats", dailyStatisticsRepository.findByDate(selectedDate));
         model.addAttribute("keepAliveActive", keepAliveService.isKeepAliveActive());
         // lastResult được thêm bởi flash attribute sau khi POST; nếu chưa có thì để null.

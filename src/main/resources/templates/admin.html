@@ -91,7 +91,7 @@
             <tbody>
             <tr th:each="stat : ${dailyStats}">
                 <td th:text="${stat.categoryId == null ? 'Tất cả chuyên mục' : categoryNames[stat.categoryId]}">—</td>
-                <td th:text="${stat.sourceId == null ? 'Tất cả nguồn' : 'Nguồn #' + stat.sourceId}">—</td>
+                <td th:text="${stat.sourceId == null ? 'Tất cả nguồn' : sourceNames[stat.sourceId]}">—</td>
                 <td th:text="${stat.articleCount}">0</td>
                 <td th:text="${stat.averagePopularity == null ? 0 : stat.averagePopularity}">0</td>
             </tr>
