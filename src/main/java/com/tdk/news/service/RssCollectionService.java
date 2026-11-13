@@ -378,7 +378,20 @@ public class RssCollectionService {
         if (batch.isEmpty()) {
             return;
         }
-        commitBatch(batch);
+        try {
+            commitBatch(batch);
+        } catch (Exception e) {
+            // Commit thất bại (DB shutdown, lỗi kết nối...): trả lại toàn bộ batch về hàng đợi
+            // để lần sau (luồng nền hoặc flushPendingQueueNow) tiếp tục thử.
+            log.warn("[RSS] Commit batch thất bại, trả lại " + batch.size()
+                    + " bài vào hàng đợi để thử lại sau: " + e.getMessage());
+            pendingQueue.addAll(batch);
+        }
+    }
+
+    /** Commit ngay tất cả phần dư trong hàng đợi (dù chưa đủ 100) khi hết request active. */
+    public void flushPendingQueueNow() {
+        flushPendingQueue();
     }
 
     /** Commit một batch PendingArticle vào DB trong một transaction riêng. Thử lại nếu lỗi kết nối. */
@@ -409,8 +422,8 @@ public class RssCollectionService {
                     try { Thread.sleep(1000); } catch (InterruptedException ie) { Thread.currentThread().interrupt(); return; }
                     continue;
                 }
-                log.error("[RSS] Commit batch thất bại sau " + maxAttempts + " lần, bỏ qua batch này: " + e.getMessage());
-                return;
+                log.error("[RSS] Commit batch thất bại sau " + maxAttempts + " lần, ném lỗi để trả lại hàng đợi: " + e.getMessage());
+                throw e;
             }
         }
     }

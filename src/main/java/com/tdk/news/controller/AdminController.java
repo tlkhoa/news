@@ -264,6 +264,8 @@ public class AdminController {
             } finally {
                 if (activeCollectionJobs.decrementAndGet() <= 0) {
                     keepAliveService.deactivateKeepAlive();
+                    // Hết request active → commit ngay phần dư trong hàng đợi (dù chưa đủ 100).
+                    collectionService.flushPendingQueueNow();
                 }
             }
         }, asyncExecutor);
