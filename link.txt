@@ -1,3 +1,5 @@
 https://news-2p7c.onrender.com
 
 tlkhoa81@
+
+toi van thay articleRepository.updateContent(arti va articleRepository.updateAuthor(articl y toi la co entity artice, sau khi set het cac truong can sua hoac set het cac truong can them, du batch size hoac het tin can xu ly cua mot source thi saveall

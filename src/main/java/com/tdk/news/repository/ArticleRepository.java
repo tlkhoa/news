@@ -89,26 +89,28 @@ public class ArticleRepository {
     }
 
     /**
-     * Chèn bài mới nếu URL chưa tồn tại (cột "Url" có ràng buộc UNIQUE). Dùng cho chức năng
-     * cập nhật tin hôm nay. Trả về số hàng thực sự chèn (0 nếu trùng URL).
-     * Cần ràng buộc UNIQUE trên "Articles"."Url" (xem file database/add-unique-url.sql).
+     * Chèn bài mới nếu URL chưa tồn tại, với đầy đủ các trường đã chuẩn bị sẵn.
+     * Trả về số hàng thực sự chèn (0 nếu trùng URL).
      */
     public int insertIfNotExists(Integer sourceId, Integer categoryId, String title, String url,
                                  String description, String content, String imageUrl, String author,
-                                 LocalDateTime publishedAt, Double popularityScore, String popularityMethod) {
+                                 LocalDateTime publishedAt, Double popularityScore, String popularityMethod,
+                                 Boolean isFullTextStored, LocalDateTime contentFetchedAt) {
         String sql =
                 "INSERT INTO \"Articles\"\n" +
                 "(\"SourceId\", \"CategoryId\", \"Title\", \"NormalizedTitle\", \"Url\", \"Description\", \"Content\", \"ImageUrl\", \"Author\",\n" +
-                "\"ContentHash\", \"PublishedAt\", \"CollectedAt\", \"PopularityScore\", \"IsFullTextStored\", \"PopularityMethod\")\n" +
-                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, now(), ?, false, ?)\n" +
+                "\"ContentHash\", \"PublishedAt\", \"CollectedAt\", \"PopularityScore\", \"IsFullTextStored\", \"PopularityMethod\", \"ContentFetchedAt\")\n" +
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, now(), ?, ?, ?, ?)\n" +
                 "ON CONFLICT (\"Url\") DO NOTHING";
         int rows = jdbc.update(sql,
             sourceId, categoryId, title, title, url, description, content, imageUrl, author,
             content == null ? "" : content,
             publishedAt == null ? java.sql.Timestamp.valueOf(LocalDateTime.now())
                                 : java.sql.Timestamp.valueOf(publishedAt),
-            popularityScore == null ? 0 : popularityScore,
-            popularityMethod == null ? "RSS" : popularityMethod);
+            popularityScore == null ? 0.0 : popularityScore,
+            isFullTextStored != null && isFullTextStored,
+            popularityMethod == null ? "RSS" : popularityMethod,
+            contentFetchedAt == null ? null : java.sql.Timestamp.valueOf(contentFetchedAt));
         log.info("[ArticleRepository] insertIfNotExists rows=" + rows + " url=" + url);
         return rows;
     }
