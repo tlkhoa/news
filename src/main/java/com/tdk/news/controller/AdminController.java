@@ -45,7 +45,8 @@ public class AdminController {
     private final KeepAliveService keepAliveService;
 
     // Thread pool chay cac cong viec cap nhat nguon bat dong bo (cho phep nhieu nguon cung luc).
-    private final ExecutorService asyncExecutor = Executors.newFixedThreadPool(4);
+    // Gioi han 2 luong de tranh ap loi len connection pool khi nhieu transaction song song.
+    private final ExecutorService asyncExecutor = Executors.newFixedThreadPool(2);
 
     // Trang thai tung job cap nhat (key = "source-" + sourceId), de frontend poll.
     private final ConcurrentHashMap<String, CollectionJob> collectionJobs = new ConcurrentHashMap<>();

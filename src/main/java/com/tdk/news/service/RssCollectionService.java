@@ -401,7 +401,7 @@ public class RssCollectionService {
     /** Commit một batch thao tác DB trong một transaction riêng. Thử lại nếu lỗi kết nối (08006/Socket closed). */
     private void commitBatch(List<BatchJob> jobs) {
         int maxAttempts = 3;
-        for (int attempt = 1; ; attempt++) {
+        for (int attempt = 1; attempt <= maxAttempts; attempt++) {
             try {
                 transactionTemplate.execute(status -> {
                     for (BatchJob job : jobs) {
@@ -412,20 +412,24 @@ public class RssCollectionService {
                 log.info("[RSS] Commit batch " + jobs.size() + " bài vào DB.");
                 return;
             } catch (Exception e) {
-                String msg = e.getMessage() == null ? "" : e.getMessage();
+                String msg = (e.getMessage() == null ? "" : e.getMessage());
                 Throwable cause = e.getCause();
                 while (cause != null) {
                     msg += " | " + (cause.getMessage() == null ? "" : cause.getMessage());
                     cause = cause.getCause();
                 }
                 boolean isConnectionError = msg.contains("08006") || msg.contains("08001") || msg.contains("08003")
-                    || msg.contains("Socket closed") || msg.contains("Connection") || msg.contains("connection");
+                    || msg.contains("Socket closed") || msg.contains("Connection") || msg.contains("connection")
+                    || msg.contains("rollback") || msg.contains("Rollback");
                 if (attempt < maxAttempts && isConnectionError) {
                     log.warn("[RSS] Lỗi kết nối DB khi commit batch (lần " + attempt + "/" + maxAttempts + "), thử lại sau 1s: " + e.getMessage());
                     try { Thread.sleep(1000); } catch (InterruptedException ie) { Thread.currentThread().interrupt(); return; }
                     continue;
                 }
-                throw e;
+                // Hết lần thử hoặc lỗi không phải kết nối: log lỗi mà không throw để tránh làm crash luồng
+                // và không gây shutdown HikariPool do lỗi rollback.
+                log.error("[RSS] Commit batch thất bại sau " + maxAttempts + " lần, bỏ qua batch này: " + e.getMessage());
+                return;
             }
         }
     }
