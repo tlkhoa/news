@@ -22,6 +22,10 @@ import java.time.temporal.ChronoField;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.GZIPInputStream;
@@ -65,7 +69,7 @@ public class RssCollectionService {
     private static final int HTTP_TIMEOUT_MS = 6000;
     private static final int MAX_RESPONSE_BYTES = 2_000_000; // 2 MB
     private static final int FETCH_DELAY_MS = 800; // nghỉ giữa các request lấy toàn văn
-    private static final int BATCH_COMMIT_SIZE = 10; // commit DB mỗi 10 bài
+    private static final int BATCH_COMMIT_SIZE = 100; // commit DB mỗi 100 bài
     private static final String USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
             + "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36";
 
@@ -99,6 +103,44 @@ public class RssCollectionService {
     private final ThreadLocal<DocumentBuilder> builderThreadLocal;
     private final TransactionTemplate transactionTemplate;
 
+    // DANH SÁCH MODEL ĐÃ XỬ LÝ CHUNG CHO TẤT CẢ CÁC REQUEST (không mỗi request 1 list riêng).
+    // Các request chỉ thêm model vào queue này; luồng nền sẽ lấy batch 100 để commit DB.
+    private final ConcurrentLinkedQueue<PendingArticle> pendingQueue = new ConcurrentLinkedQueue<>();
+
+    // Luồng nền poll queue mỗi 5 giây để commit batch vào DB.
+    private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+
+    /** Một bài viết đã xử lý xong (phân loại, trích xuất toàn văn...) nhưng chưa commit DB. */
+    public static class PendingArticle {
+        public final Integer sourceId;
+        public final Integer categoryId;
+        public final String title;
+        public final String link;
+        public final String description;
+        public final String content;
+        public final String imageUrl;
+        public final String author;
+        public final LocalDateTime publishedAt;
+        public final String fullContentHtml;
+        public final Integer sourceWeight;
+
+        public PendingArticle(Integer sourceId, Integer categoryId, String title, String link,
+                              String description, String content, String imageUrl, String author,
+                              LocalDateTime publishedAt, String fullContentHtml, Integer sourceWeight) {
+            this.sourceId = sourceId;
+            this.categoryId = categoryId;
+            this.title = title;
+            this.link = link;
+            this.description = description;
+            this.content = content;
+            this.imageUrl = imageUrl;
+            this.author = author;
+            this.publishedAt = publishedAt;
+            this.fullContentHtml = fullContentHtml;
+            this.sourceWeight = sourceWeight;
+        }
+    }
+
     public RssCollectionService(SourceRepository sourceRepository,
                                 ArticleRepository articleRepository,
                                 ArticleContentExtractor contentExtractor,
@@ -131,6 +173,9 @@ public class RssCollectionService {
 
         this.transactionTemplate = new TransactionTemplate(transactionManager);
         this.transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+
+        // Khởi động luồng nền poll queue commit batch.
+        this.scheduler.scheduleAtFixedRate(this::flushPendingQueue, 5, 5, TimeUnit.SECONDS);
     }
 
     /** Kết quả thu từ một nguồn feed: số bài tìm thấy và số bài chèn mới. */
@@ -242,13 +287,13 @@ public class RssCollectionService {
             log.info("[RSS] " + sourceName + ": tìm thấy " + itemCount + " bài trong feed");
             if (itemCount == 0) {
                 log.info("[RSS] " + sourceName + ": feed trống hoặc không có thẻ <item>, không có bài nào để chèn.");
+                return new FeedResult(itemCount, 0);
             }
             int[] inserted = {0};
             int[] skippedDuplicate = {0};
             int[] skippedNoLink = {0};
 
-            // Danh sách thao tác DB đợi commit (batch).
-            List<BatchJob> batch = new ArrayList<>(BATCH_COMMIT_SIZE);
+            // Thêm model đã xử lý vào pendingQueue chung (tất cả request chia sẻ 1 list).
 
             for (int i = 0; i < items.getLength(); i++) {
                 Node item = items.item(i);
@@ -271,7 +316,7 @@ public class RssCollectionService {
 
                 LocalDateTime publishedAt = parseDate(pubDateStr).toLocalDateTime();
 
-                log.info("[RSS] Đang chèn: title=" + title + ", link=" + link + ", publishedAt=" + publishedAt);
+                log.info("[RSS] Đang xử lý: title=" + title + ", link=" + link + ", publishedAt=" + publishedAt);
 
                 // 1. Phân loại chuyên mục (giống .NET NewsClassifier).
                 Integer categoryId = newsClassifier.classify(title, desc);
@@ -303,7 +348,7 @@ public class RssCollectionService {
                     System.err.println("[RSS] Lỗi fetch toàn văn cho " + link + " | " + e.getMessage());
                 }
 
-                // 3. Chuẩn bị dữ liệu chèn DB.
+                // 3. Chuẩn bị dữ liệu chèn DB (gói vào BatchJob, chưa commit).
                 final String contentToStore = fullContentHtml != null ? fullContentHtml : content;
                 final String contentForClassifier = desc; // classify dùng mô tả RSS
                 final Integer catId = categoryId;
@@ -316,96 +361,34 @@ public class RssCollectionService {
                 final LocalDateTime fPublishedAt = publishedAt;
                 final String fFullContentHtml = fullContentHtml;
 
-                batch.add(() -> {
-                    // Chèn bài (CategoryId đã có, PopularityScore tạm = 0).
-                    int rows = articleRepository.insertIfNotExists(
-                            sourceId, catId, fTitle, fLink, fDesc, contentToStore, fImageUrl, fAuthor,
-                            fPublishedAt, 0.0, "RSS");
-                    if (rows > 0) {
-                        inserted[0]++;
-                        log.info("[RSS] ĐÃ LƯU DB: " + fTitle
-                                + " (categoryId=" + catId + ")");
-
-                        // Lưu toàn văn nếu có.
-                        if (fFullContentHtml != null) {
-                            Long articleId = articleRepository.findArticleIdByUrl(fLink);
-                            if (articleId != null) {
-                                articleRepository.updateContent(articleId, fFullContentHtml, java.time.LocalDateTime.now());
-                                log.info("[RSS] Đã lưu toàn văn cho id=" + articleId);
-
-                                // Nếu RSS không có tác giả, thử trích từ trang chi tiết.
-                                if (fAuthor == null || fAuthor.isBlank()) {
-                                    try {
-                                        String html2 = fetchHtml(fLink);
-                                        if (html2 != null && !html2.isBlank()) {
-                                            URL pageUrl2 = new URL(fLink);
-                                            org.jsoup.nodes.Document doc2 = Jsoup.parse(html2, pageUrl2.toString());
-                                            String authorFromPage = contentExtractor.extractAuthor(doc2);
-                                            if (authorFromPage != null && !authorFromPage.isBlank()) {
-                                                articleRepository.updateAuthor(articleId, authorFromPage);
-                                                log.info("[RSS] Đã lưu tác giả cho id=" + articleId + ": " + authorFromPage);
-                                            }
-                                        }
-                                    } catch (Exception e) {
-                                        System.err.println("[RSS] Lỗi lấy tác giả từ trang chi tiết " + fLink + " | " + e.getMessage());
-                                    }
-                                }
-                            }
-                        }
-
-                        // 4. Tính điểm phổ biến (giống .NET PopularityScorer).
-                        NewsArticle tmp = new NewsArticle();
-                        tmp.setPublishedAt(fPublishedAt);
-                        tmp.setCollectedAt(java.time.LocalDateTime.now());
-                        tmp.setViewCount(null); // RSS không có lượt đọc công khai
-                        tmp.setDescription(fDesc);
-                        tmp.setImageUrl(fImageUrl);
-                        tmp.setAuthor(fAuthor);
-
-                        PopularityScorerService.ScoreResult score = popularityScorer.scoreArticle(tmp, srcWeight, java.time.LocalDateTime.now());
-
-                        // Cập nhật PopularityScore, PopularityMethod (CategoryId đã lưu ở trên).
-                        Long articleId = articleRepository.findArticleIdByUrl(fLink);
-                        if (articleId != null) {
-                            articleRepository.updateArticleMetadata(
-                                    articleId, catId, score.total, score.method);
-                            log.info("[RSS] Đã cập nhật điểm id=" + articleId
-                                    + " score=" + score.total + " method=" + score.method);
-                        }
-                    } else {
-                        log.info("[RSS] BỎ QUA (trùng URL): " + fTitle);
-                        skippedDuplicate[0]++;
-                    }
-                    return null;
-                });
-
-                // Commit mỗi BATCH_COMMIT_SIZE bài.
-                if (batch.size() >= BATCH_COMMIT_SIZE) {
-                    commitBatch(batch);
-                    batch.clear();
-                }
+                pendingQueue.offer(new PendingArticle(sourceId, catId, fTitle, fLink, fDesc, contentToStore, fImageUrl, fAuthor, fPublishedAt, fFullContentHtml, srcWeight));
             }
 
-            // Commit phần dư (dưới 10 bài).
-            if (!batch.isEmpty()) {
-                commitBatch(batch);
-                batch.clear();
-            }
-
-            log.info("[RSS] " + sourceName + ": tổng mới chèn = " + inserted[0]
-                    + ", bỏ qua trùng URL = " + skippedDuplicate[0]
-                    + ", bỏ qua không có link = " + skippedNoLink[0]);
+            log.info("[RSS] " + sourceName + ": đã thêm vào hàng đợi chung (pendingQueue), tổng bài xử lý = " + inserted[0]);
             return new FeedResult(itemCount, inserted[0]);
     }
 
-    /** Commit một batch thao tác DB trong một transaction riêng. Thử lại nếu lỗi kết nối (08006/Socket closed). */
-    private void commitBatch(List<BatchJob> jobs) {
+    /** Lấy tối đa 100 model từ hàng đợi chung và commit vào DB trong 1 transaction. Chạy bởi luồng nền mỗi 5 giây. */
+    private void flushPendingQueue() {
+        List<PendingArticle> batch = new ArrayList<>(BATCH_COMMIT_SIZE);
+        PendingArticle item;
+        while ((item = pendingQueue.poll()) != null && batch.size() < BATCH_COMMIT_SIZE) {
+            batch.add(item);
+        }
+        if (batch.isEmpty()) {
+            return;
+        }
+        commitBatch(batch);
+    }
+
+    /** Commit một batch PendingArticle vào DB trong một transaction riêng. Thử lại nếu lỗi kết nối. */
+    private void commitBatch(List<PendingArticle> jobs) {
         int maxAttempts = 3;
         for (int attempt = 1; attempt <= maxAttempts; attempt++) {
             try {
                 transactionTemplate.execute(status -> {
-                    for (BatchJob job : jobs) {
-                        job.run();
+                    for (PendingArticle p : jobs) {
+                        insertPendingArticle(p);
                     }
                     return null;
                 });
@@ -426,11 +409,64 @@ public class RssCollectionService {
                     try { Thread.sleep(1000); } catch (InterruptedException ie) { Thread.currentThread().interrupt(); return; }
                     continue;
                 }
-                // Hết lần thử hoặc lỗi không phải kết nối: log lỗi mà không throw để tránh làm crash luồng
-                // và không gây shutdown HikariPool do lỗi rollback.
                 log.error("[RSS] Commit batch thất bại sau " + maxAttempts + " lần, bỏ qua batch này: " + e.getMessage());
                 return;
             }
+        }
+    }
+
+    /** Chèn 1 PendingArticle vào DB (giống nội dung cũ trong BatchJob). */
+    private void insertPendingArticle(PendingArticle p) {
+        int rows = articleRepository.insertIfNotExists(
+                p.sourceId, p.categoryId, p.title, p.link, p.description, p.content, p.imageUrl, p.author,
+                p.publishedAt, 0.0, "RSS");
+        if (rows > 0) {
+            log.info("[RSS] ĐÃ LƯU DB: " + p.title + " (categoryId=" + p.categoryId + ")");
+
+            if (p.fullContentHtml != null) {
+                Long articleId = articleRepository.findArticleIdByUrl(p.link);
+                if (articleId != null) {
+                    articleRepository.updateContent(articleId, p.fullContentHtml, java.time.LocalDateTime.now());
+                    log.info("[RSS] Đã lưu toàn văn cho id=" + articleId);
+
+                    if (p.author == null || p.author.isBlank()) {
+                        try {
+                            String html2 = fetchHtml(p.link);
+                            if (html2 != null && !html2.isBlank()) {
+                                URL pageUrl2 = new URL(p.link);
+                                org.jsoup.nodes.Document doc2 = Jsoup.parse(html2, pageUrl2.toString());
+                                String authorFromPage = contentExtractor.extractAuthor(doc2);
+                                if (authorFromPage != null && !authorFromPage.isBlank()) {
+                                    articleRepository.updateAuthor(articleId, authorFromPage);
+                                    log.info("[RSS] Đã lưu tác giả cho id=" + articleId + ": " + authorFromPage);
+                                }
+                            }
+                        } catch (Exception e) {
+                            System.err.println("[RSS] Lỗi lấy tác giả từ trang chi tiết " + p.link + " | " + e.getMessage());
+                        }
+                    }
+                }
+            }
+
+            NewsArticle tmp = new NewsArticle();
+            tmp.setPublishedAt(p.publishedAt);
+            tmp.setCollectedAt(java.time.LocalDateTime.now());
+            tmp.setViewCount(null);
+            tmp.setDescription(p.description);
+            tmp.setImageUrl(p.imageUrl);
+            tmp.setAuthor(p.author);
+
+            PopularityScorerService.ScoreResult score = popularityScorer.scoreArticle(tmp, p.sourceWeight, java.time.LocalDateTime.now());
+
+            Long articleId = articleRepository.findArticleIdByUrl(p.link);
+            if (articleId != null) {
+                articleRepository.updateArticleMetadata(
+                        articleId, p.categoryId, score.total, score.method);
+                log.info("[RSS] Đã cập nhật điểm id=" + articleId
+                        + " score=" + score.total + " method=" + score.method);
+            }
+        } else {
+            log.info("[RSS] BỎ QUA (trùng URL): " + p.title);
         }
     }
 

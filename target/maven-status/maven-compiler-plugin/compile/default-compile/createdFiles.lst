@@ -20,6 +20,7 @@ com\tdk\news\controller\AdminController$CategoryStat.class
 com\tdk\news\service\PopularityScorerService.class
 com\tdk\news\service\KeepAliveService.class
 com\tdk\news\service\PopularityScorerService$Component.class
+com\tdk\news\service\RssCollectionService$PendingArticle.class
 com\tdk\news\service\ContentFetchService$FetchResult.class
 com\tdk\news\model\NewsArticle.class
 com\tdk\news\model\ArticleSummary.class
