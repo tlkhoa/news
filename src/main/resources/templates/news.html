@@ -127,27 +127,33 @@
         if (dateInput && urlParams.has('date')) sessionStorage.setItem('newsDate', urlParams.get('date'));
         if (catSelect && urlParams.has('categoryId')) sessionStorage.setItem('newsCategoryId', urlParams.get('categoryId'));
 
-        // Khi load trang: nếu URL không có param nhưng sessionStorage có, redirect để giữ bộ lọc.
+        // Khi load trang: nếu URL không có param nhưng sessionStorage có giá trị hợp lệ, redirect để giữ bộ lọc.
         var hasDateParam = urlParams.has('date');
         var hasCatParam = urlParams.has('categoryId');
 
         var savedDate = sessionStorage.getItem('newsDate');
         var savedCat = sessionStorage.getItem('newsCategoryId');
+        // categoryId rỗng nghĩa là "Tất cả chuyên mục" (không cần param trên URL)
+        var hasSavedCat = savedCat !== null && savedCat !== '';
 
-        if ((!hasDateParam || !hasCatParam) && (savedDate || savedCat)) {
+        if ((!hasDateParam && savedDate) || (!hasCatParam && hasSavedCat)) {
             var qs = [];
             if (savedDate) qs.push('date=' + encodeURIComponent(savedDate));
-            if (savedCat) qs.push('categoryId=' + encodeURIComponent(savedCat));
+            if (hasSavedCat) qs.push('categoryId=' + encodeURIComponent(savedCat));
             if (qs.length) {
-                window.location.href = window.location.pathname + '?' + qs.join('&');
-                return;
+                var target = window.location.pathname + '?' + qs.join('&');
+                var current = window.location.pathname + window.location.search;
+                if (target !== current) {
+                    window.location.href = target;
+                    return;
+                }
             }
         }
 
         // Đặt giá trị đã lưu vào form nếu chưa có.
         if (dateInput && savedDate && !hasDateParam) dateInput.value = savedDate;
-        if (catSelect && savedCat && !hasCatParam) {
-            catSelect.value = savedCat;
+        if (catSelect && !hasCatParam) {
+            catSelect.value = hasSavedCat ? savedCat : '';
         }
     })();
     </script>

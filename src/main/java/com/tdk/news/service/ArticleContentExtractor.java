@@ -65,6 +65,8 @@ public class ArticleContentExtractor {
         "div.detail-content",
         "div.singular-content",
         "div.content-details__main-content", "div.article__content",
+        "div.article__body", "div.cms-body", "div.zce-content-body",
+        "div[itemprop=articleBody]",
         "div.content-detail", "article.article-content",
         "div.article-content", "div.the-content",
         "article"
