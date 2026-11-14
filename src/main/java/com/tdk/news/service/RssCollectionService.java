@@ -304,6 +304,8 @@ public class RssCollectionService {
 
             // Xử lý từng bài, set đầy đủ trường vào model rồi đưa vào pendingQueue chung.
 
+            int skippedExisting = 0;
+
             for (int i = 0; i < items.getLength(); i++) {
                 Node item = items.item(i);
                 String title = getText(item, "title");
@@ -317,6 +319,12 @@ public class RssCollectionService {
                 if (link == null || link.isBlank()) {
                     log.info("[RSS] Bỏ qua bài không có link: " + title);
                     skippedNoLink++;
+                    continue;
+                }
+
+                // Bỏ qua URL đã tồn tại trong DB để tránh xử lý trùng và ghi log sai số bài chèn mới.
+                if (articleRepository.urlExists(link)) {
+                    skippedExisting++;
                     continue;
                 }
 
@@ -386,8 +394,10 @@ public class RssCollectionService {
                 queued++;
             }
 
-            log.info("[RSS] " + sourceName + ": đã xử lý xong và đưa " + queued
-                    + " bài vào hàng đợi chung (bỏ qua không có link = " + skippedNoLink + ")");
+            log.info("[RSS] " + sourceName + ": tìm thấy " + itemCount
+                    + ", mới (sẽ chèn) " + queued
+                    + ", bỏ qua đã có = " + skippedExisting
+                    + ", bỏ qua không có link = " + skippedNoLink);
             return new FeedResult(itemCount, queued);
     }
 
@@ -552,6 +562,15 @@ public class RssCollectionService {
 
 
     public Document fetchAndParse(String feedUrl) throws Exception {
+        return fetchAndParse(feedUrl, null, false);
+    }
+
+    /**
+     * Fetch va parse RSS. Ho tro mot lan thu lai khi server tra ve trang challenge
+     * dat cookie bang JavaScript (vi du laodong.vn tra ve script set D1N + reload),
+     * vi HttpURLConnection khong thuc thi JS nen can tu dat cookie va goi lai.
+     */
+    private Document fetchAndParse(String feedUrl, String cookieHeader, boolean retriedChallenge) throws Exception {
         HttpURLConnection con = null;
 
         try {
@@ -578,6 +597,10 @@ public class RssCollectionService {
                     "Accept-Encoding",
                     "gzip, deflate, identity"
             );
+
+            if (cookieHeader != null && !cookieHeader.isBlank()) {
+                con.setRequestProperty("Cookie", cookieHeader);
+            }
 
             int status = con.getResponseCode();
 
@@ -780,6 +803,16 @@ public class RssCollectionService {
                 throw new IOException("RSS response is empty");
             }
 
+            // Một số CDN/WAF (vd: laodong.vn) trả về trang HTML challenge đặt cookie bằng JS
+            // rồi reload. HttpURLConnection không chạy JS nên cần tự lấy cookie và thử lại 1 lần.
+            if (!retriedChallenge) {
+                String challengeCookie = extractJsCookieChallenge(xmlContent);
+                if (challengeCookie != null) {
+                    log.info("[RSS] Phát hiện cookie challenge, thử lại với cookie: " + feedUrl);
+                    return fetchAndParse(feedUrl, challengeCookie, true);
+                }
+            }
+
             // Kiểm tra HTML
             String lower = xmlContent.toLowerCase(Locale.ROOT);
 
@@ -903,6 +936,36 @@ public class RssCollectionService {
         } finally {
             con.disconnect();
         }
+    }
+
+    /**
+     * Trích xuất cookie từ trang challenge JS kiểu: document.cookie="NAME=VALUE"+...;window.location.reload(...)
+     * Trả về "NAME=VALUE" nếu phát hiện, ngược lại null.
+     */
+    private static String extractJsCookieChallenge(String content) {
+        if (content == null || content.isBlank()) {
+            return null;
+        }
+        String lower = content.toLowerCase(Locale.ROOT);
+        if (!lower.contains("document.cookie") || !lower.contains("window.location.reload")) {
+            return null;
+        }
+        java.util.regex.Matcher m = java.util.regex.Pattern
+                .compile("document\\.cookie\\s*=\\s*\"([^\"]+)\"")
+                .matcher(content);
+        if (m.find()) {
+            String cookie = m.group(1);
+            // Chuỗi có thể dạng "D1N=..."+""; chỉ lấy phần name=value
+            int semi = cookie.indexOf(';');
+            if (semi >= 0) {
+                cookie = cookie.substring(0, semi);
+            }
+            cookie = cookie.trim();
+            if (!cookie.isEmpty() && cookie.contains("=")) {
+                return cookie;
+            }
+        }
+        return null;
     }
 
     /** Tìm vị trí đầu tiên của thẻ tag (không phân biệt hoa thường). Trả về -1 nếu không tìm thấy. */
