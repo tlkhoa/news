@@ -63,6 +63,15 @@ public class ArticleContentExtractor {
         DROP_CLASSES.add("m-block-ad");
         DROP_CLASSES.add("o-self-promo");
         DROP_CLASSES.add("self-promo");
+        // VietnamPlus, Nhân Dân, Tiền Phong và báo tương tự: chia sẻ MXH, quảng cáo in-article, bài liên quan/nhúng
+        DROP_CLASSES.add("social-pin");
+        DROP_CLASSES.add("sda_middle");
+        DROP_CLASSES.add("sda-");
+        DROP_CLASSES.add("rennab");
+        DROP_CLASSES.add("article-relate");
+        DROP_CLASSES.add("box-relate");
+        DROP_CLASSES.add("relate");
+        DROP_CLASSES.add("gg-prefer");
     }
 
     private static final String[] CONTENT_SELECTORS = {
@@ -71,6 +80,8 @@ public class ArticleContentExtractor {
         "div.singular-content",
         "div.content-details__main-content", "div.article__content",
         "div.article__body", "div.cms-body", "div.zce-content-body",
+        // VietnamPlus: vùng nội dung chính có class zce-content-body và itemprop articleBody
+        "div.zce-content-body[itemprop=articleBody]", "div.article__body.zce-content-body",
         "div[itemprop=articleBody]",
         "div.content-detail", "article.article-content",
         "div.article-content", "div.the-content",
@@ -188,9 +199,45 @@ public class ArticleContentExtractor {
     }
 
     private static void dropElementsByClass(Document doc, String cls) {
-        // Chọn phần tử có class chứa cls (tương đương XPath contains(concat(' ',normalize-space(@class),' '),' cls ')).
-        String query = String.format("[class~=(?:^|\\s)%s(?:\\s|$)]", java.util.regex.Pattern.quote(cls));
-        doc.select(query).remove();
+        // 1) Token khớp chính xác (class="... cls ...")
+        String tokenQuery = String.format("[class~=(?:^|\\s)%s(?:\\s|$)]", java.util.regex.Pattern.quote(cls));
+        Elements byToken = doc.select(tokenQuery);
+        for (Element el : byToken) {
+            if (shouldDropElement(el)) {
+                el.remove();
+            }
+        }
+        // 2) Token có chứa keyword như một phần (vd: article-relate chứa "relate"/"related", sda_middle chứa "sda")
+        //    Dùng selector substring trên thuộc tính class và kiểm tra ranh giới ký tự để tránh match sai.
+        String needle = cls.toLowerCase();
+        for (Element el : doc.select("[class*=" + cls + "]")) {
+            if (el.parent() == null) continue; // đã bị loại bỏ khỏi DOM
+            String classAttr = el.className();
+            if (classAttr == null || classAttr.isEmpty()) continue;
+            String[] tokens = classAttr.toLowerCase().split("\\s+");
+            boolean matched = false;
+            for (String t : tokens) {
+                if (t.equals(needle) || t.contains(needle)) {
+                    matched = true;
+                    break;
+                }
+            }
+            if (matched && shouldDropElement(el)) {
+                el.remove();
+            }
+        }
+    }
+
+    /** Chỉ loại bỏ phần tử khối/nhiễu, tránh xóa nhầm liên kết/thẻ inline trong nội dung (vd: a.cms-relate). */
+    private static boolean shouldDropElement(Element el) {
+        String tag = el.tagName().toLowerCase();
+        // Không xóa thẻ inline chứa nội dung văn bản; chỉ xóa khi là khối/chứa nhúng
+        if ("a".equals(tag) || "span".equals(tag) || "strong".equals(tag) || "em".equals(tag)
+                || "b".equals(tag) || "i".equals(tag) || "u".equals(tag) || "small".equals(tag)
+                || "mark".equals(tag) || "label".equals(tag)) {
+            return false;
+        }
+        return true;
     }
 
     /* ---------- Scoring ---------- */

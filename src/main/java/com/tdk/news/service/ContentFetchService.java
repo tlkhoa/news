@@ -44,7 +44,7 @@ public class ContentFetchService {
     private static final int HTTP_TIMEOUT_MS = 10_000;
     private static final int MAX_RESPONSE_BYTES = 2_000_000; // 2 MB
     private static final String USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-            + "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36";
+            + "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
 
     // Các thẻ/xu hướng cần loại bỏ (quảngardt, thanh điều hướng, ...).
     private static final String[] REMOVE_TAGS = {
@@ -168,9 +168,26 @@ public class ContentFetchService {
         HttpURLConnection con = (HttpURLConnection) url.openConnection();
         con.setRequestMethod("GET");
         con.setRequestProperty("User-Agent", USER_AGENT);
-        con.setRequestProperty("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
-        // Báo cho server biết chúng ta chấp nhận dữ liệu nén
+        con.setRequestProperty("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7");
+        con.setRequestProperty("Accept-Language", "vi-VN,vi;q=0.9,en-US;q=0.8,en;q=0.7");
+        // Báo cho server biết chúng ta chấp nhận dữ liệu nén (không yêu cầu br vì JDK thuần không giải nén Brotli)
         con.setRequestProperty("Accept-Encoding", "gzip, deflate, identity");
+        con.setRequestProperty("Cache-Control", "no-cache");
+        con.setRequestProperty("Pragma", "no-cache");
+        con.setRequestProperty("Connection", "keep-alive");
+        con.setRequestProperty("Upgrade-Insecure-Requests", "1");
+        con.setRequestProperty("Sec-Fetch-Dest", "document");
+        con.setRequestProperty("Sec-Fetch-Mode", "navigate");
+        con.setRequestProperty("Sec-Fetch-Site", "none");
+        con.setRequestProperty("Sec-Fetch-User", "?1");
+        con.setRequestProperty("sec-ch-ua", "\"Google Chrome\";v=\"131\", \"Chromium\";v=\"131\", \"Not_A Brand\";v=\"24\"");
+        con.setRequestProperty("sec-ch-ua-mobile", "?0");
+        con.setRequestProperty("sec-ch-ua-platform", "\"Windows\"");
+        try {
+            con.setRequestProperty("Referer", url.getProtocol() + "://" + url.getHost() + "/");
+        } catch (Exception ignore) {
+            // Bỏ qua nếu không dựng được Referer
+        }
         con.setConnectTimeout(HTTP_TIMEOUT_MS);
         con.setReadTimeout(HTTP_TIMEOUT_MS);
         con.setInstanceFollowRedirects(true);
