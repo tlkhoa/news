@@ -930,11 +930,27 @@ public class RssCollectionService {
 
     /** Fetch HTML từ URL trang chi tiết (dùng để trích xuất toàn văn). */
     private String fetchHtml(String urlStr) throws IOException {
+        return fetchHtml(urlStr, null, false);
+    }
+
+    /**
+     * Fetch HTML có hỗ trợ cookie challenge (document.cookie + window.location.reload) của một số CDN/WAF
+     * như laodong.vn: lần đầu nhận trang challenge, tự đặt cookie và gọi lại một lần.
+     * Trang short-video không có nội dung văn bản để trích xuất nên bỏ qua luôn.
+     */
+    private String fetchHtml(String urlStr, String cookieHeader, boolean retriedChallenge) throws IOException {
+        if (urlStr != null && urlStr.matches("(?i).*/short-video/.*")) {
+            log.info("[RSS] Bỏ qua lấy toàn văn cho trang short-video: " + urlStr);
+            return null;
+        }
         URL url = new URL(urlStr);
         HttpURLConnection con = (HttpURLConnection) url.openConnection();
         con.setRequestMethod("GET");
         con.setRequestProperty("User-Agent", USER_AGENT);
         con.setRequestProperty("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
+        if (cookieHeader != null && !cookieHeader.isBlank()) {
+            con.setRequestProperty("Cookie", cookieHeader);
+        }
         con.setConnectTimeout(HTTP_TIMEOUT_MS);
         con.setReadTimeout(HTTP_TIMEOUT_MS);
         con.setInstanceFollowRedirects(true);
@@ -956,7 +972,15 @@ public class RssCollectionService {
                     throw new IOException("Phản hồi quá lớn (> " + MAX_RESPONSE_BYTES + " bytes)");
                 }
             }
-            return sb.toString();
+            String html = sb.toString();
+            if (!retriedChallenge) {
+                String challengeCookie = extractJsCookieChallenge(html);
+                if (challengeCookie != null) {
+                    log.info("[RSS] Phát hiện cookie challenge khi lấy toàn văn, thử lại với cookie: " + urlStr);
+                    return fetchHtml(urlStr, challengeCookie, true);
+                }
+            }
+            return html;
         } finally {
             con.disconnect();
         }

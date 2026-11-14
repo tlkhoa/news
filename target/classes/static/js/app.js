@@ -861,8 +861,8 @@
         var STATUS_URL = '/admin/update-source/';
         var POLL_INTERVAL = 2000;
         var MAX_POLL = 600;
-        var HIDE_DELAY_DONE = 6000;
-        var HIDE_DELAY_ERROR = 8000;
+        var HIDE_DELAY_DONE = 21600000;
+        var HIDE_DELAY_ERROR = 21600000;
 
         // jobStates[sourceId] = { polling: boolean, pollCount: number, timer: number|null }
         var jobStates = {};
