@@ -860,7 +860,7 @@
         var START_URL = '/admin/update-source/';
         var STATUS_URL = '/admin/update-source/';
         var POLL_INTERVAL = 2000;
-        var MAX_POLL = 300; // tối đa ~10 phút polling, sau đó bỏ polling (công việc còn chạy trên server)
+        var MAX_POLL = 600; // tối đa ~20 phút polling, sau đó bỏ polling (công việc còn chạy trên server)
 
         // jobStates[sourceId] = { polling: boolean, pollCount: number, timer: number|null }
         var jobStates = {};
