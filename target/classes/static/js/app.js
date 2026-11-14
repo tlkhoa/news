@@ -875,10 +875,10 @@
         }
 
         function btnOf(sourceId) {
-            return document.querySelector('.btn-update-source[data-id=' + sourceId + ']');
+            return document.querySelector('.btn-update-source[data-id="' + sourceId + '"]');
         }
         function statusOf(sourceId) {
-            return document.querySelector('.job-status[data-id=' + sourceId + ']');
+            return document.querySelector('.job-status[data-id="' + sourceId + '"]');
         }
 
         function clearHideTimer(sourceId) {
