@@ -277,12 +277,10 @@ public class RssCollectionService {
         Double avg = articleRepository.avgPopularityByDateAndSource(date, sourceId);
         dailyStatisticsRepository.upsert(date, null, sourceId, total, avg == null ? 0.0 : avg);
 
-        List<Integer> categoryIds = articleRepository.findDistinctCategoryIdsByDate(date);
+        List<Integer> categoryIds = articleRepository.findDistinctCategoryIdsByDateAndSource(date, sourceId);
         for (Integer catId : categoryIds) {
-            int cnt = articleRepository.countByDateAndCategory(date, catId);
-            // Gioi han chi tinh theo chuyen muc cua nguon hien tai neu muon chinh xac hon;
-            // o day lay tat ca chuyen muc cua ngay (de du lieu thong ke duoc du phong).
-            Double a = articleRepository.avgPopularityByDateAndCategory(date, catId);
+            int cnt = articleRepository.countByDateAndCategoryAndSource(date, catId, sourceId);
+            Double a = articleRepository.avgPopularityByDateAndCategoryAndSource(date, catId, sourceId);
             dailyStatisticsRepository.upsert(date, catId, sourceId, cnt, a == null ? 0.0 : a);
         }
     }

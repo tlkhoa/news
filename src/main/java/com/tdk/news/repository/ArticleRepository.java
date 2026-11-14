@@ -196,10 +196,28 @@ public class ArticleRepository {
         return jdbc.queryForObject(sql, Double.class, date, categoryId);
     }
 
+    /** Dem so bai cua mot ngay, chuyen muc va nguon. */
+    public int countByDateAndCategoryAndSource(LocalDate date, Integer categoryId, Integer sourceId) {
+        String sql = "SELECT COUNT(*) FROM \"Articles\" WHERE CAST(\"PublishedAt\" AS DATE) = ? AND \"CategoryId\" = ? AND \"SourceId\" = ?";
+        return jdbc.queryForObject(sql, Integer.class, date, categoryId, sourceId);
+    }
+
+    /** Trung binh diem popularity cua bai trong mot ngay, chuyen muc va nguon. */
+    public Double avgPopularityByDateAndCategoryAndSource(LocalDate date, Integer categoryId, Integer sourceId) {
+        String sql = "SELECT AVG(\"PopularityScore\") FROM \"Articles\" WHERE CAST(\"PublishedAt\" AS DATE) = ? AND \"CategoryId\" = ? AND \"SourceId\" = ?";
+        return jdbc.queryForObject(sql, Double.class, date, categoryId, sourceId);
+    }
+
     /** Lay danh sach CategoryId phan biet cua bai trong mot ngay (loai bo NULL). */
     public List<Integer> findDistinctCategoryIdsByDate(LocalDate date) {
         String sql = "SELECT DISTINCT \"CategoryId\" FROM \"Articles\" WHERE CAST(\"PublishedAt\" AS DATE) = ? AND \"CategoryId\" IS NOT NULL";
         return jdbc.queryForList(sql, Integer.class, date);
+    }
+
+    /** Lay danh sach CategoryId phan biet cua bai trong mot ngay theo mot nguon (loai bo NULL). */
+    public List<Integer> findDistinctCategoryIdsByDateAndSource(LocalDate date, Integer sourceId) {
+        String sql = "SELECT DISTINCT \"CategoryId\" FROM \"Articles\" WHERE CAST(\"PublishedAt\" AS DATE) = ? AND \"SourceId\" = ? AND \"CategoryId\" IS NOT NULL";
+        return jdbc.queryForList(sql, Integer.class, date, sourceId);
     }
 
     /** Xoa tat ca bai tin cua mot ngay (dung chuc nang xoa tin hom nay). */
