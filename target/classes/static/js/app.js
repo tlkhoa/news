@@ -860,23 +860,50 @@
         var START_URL = '/admin/update-source/';
         var STATUS_URL = '/admin/update-source/';
         var POLL_INTERVAL = 2000;
-        var MAX_POLL = 600; // tối đa ~20 phút polling, sau đó bỏ polling (công việc còn chạy trên server)
+        var MAX_POLL = 600;
+        var HIDE_DELAY_DONE = 6000;
+        var HIDE_DELAY_ERROR = 8000;
 
         // jobStates[sourceId] = { polling: boolean, pollCount: number, timer: number|null }
         var jobStates = {};
 
+        function ensureState(sourceId) {
+            if (!jobStates[sourceId]) {
+                jobStates[sourceId] = { polling: false, pollCount: 0, timer: null, hideTimer: null };
+            }
+            return jobStates[sourceId];
+        }
+
         function btnOf(sourceId) {
-            return document.querySelector('.btn-update-source[data-id="' + sourceId + '"]');
+            return document.querySelector('.btn-update-source[data-id=' + sourceId + ']');
         }
         function statusOf(sourceId) {
-            return document.querySelector('.job-status[data-id="' + sourceId + '"]');
+            return document.querySelector('.job-status[data-id=' + sourceId + ']');
+        }
+
+        function clearHideTimer(sourceId) {
+            var state = jobStates[sourceId];
+            if (state && state.hideTimer) {
+                clearTimeout(state.hideTimer);
+                state.hideTimer = null;
+            }
         }
 
         function setStatusHtml(sourceId, html, cls) {
             var el = statusOf(sourceId);
             if (!el) return;
+            clearHideTimer(sourceId);
             el.innerHTML = html || '';
             el.className = 'job-status' + (cls ? ' ' + cls : '');
+        }
+
+        function scheduleStatusHide(sourceId, delay) {
+            var state = ensureState(sourceId);
+            clearHideTimer(sourceId);
+            state.hideTimer = setTimeout(function () {
+                state.hideTimer = null;
+                setStatusHtml(sourceId, '', '');
+            }, delay);
         }
 
         function setBtnState(sourceId, running) {
@@ -923,14 +950,14 @@
                         var note = data.note || 'OK';
                         setStatusHtml(sourceId,
                             '<span class="status ok">&#x2705; Xong: ' + inserted + '/' + found + ' bài (' + note + ')</span>', 'ok');
-                        setTimeout(function () { setStatusHtml(sourceId, '', ''); }, 6000);
+                        scheduleStatusHide(sourceId, HIDE_DELAY_DONE);
                     } else if (st === 'error') {
                         setBtnState(sourceId, false);
                         state.polling = false;
                         if (state.timer) { clearTimeout(state.timer); state.timer = null; }
                         setStatusHtml(sourceId,
                             '<span class="status err">&#x274C; Lỗi: ' + (data.error || 'Lỗi không xác định') + '</span>', 'err');
-                        setTimeout(function () { setStatusHtml(sourceId, '', ''); }, 8000);
+                        scheduleStatusHide(sourceId, HIDE_DELAY_ERROR);
                     } else {
                         // idle / chua co job
                         setBtnState(sourceId, false);
@@ -962,7 +989,10 @@
             setBtnState(sourceId, true);
             setStatusHtml(sourceId,
                 '<span class="status running">&#x23F3; Dang gui yeu cau...</span>', 'running');
-            jobStates[sourceId] = { polling: true, pollCount: 0, timer: null };
+            state = ensureState(sourceId);
+            if (state.timer) { clearTimeout(state.timer); state.timer = null; }
+            state.polling = true;
+            state.pollCount = 0;
 
             fetch(START_URL + sourceId, { method: 'POST',
                 headers: { 'X-Requested-With': 'fetch' } })
@@ -973,9 +1003,10 @@
                         pollStatus(sourceId, sourceName);
                     } else {
                         setBtnState(sourceId, false);
-                        jobStates[sourceId].polling = false;
+                        ensureState(sourceId).polling = false;
                         setStatusHtml(sourceId,
                             '<span class="status err">&#x274C; Khong the bat dau cap nhat</span>', 'err');
+                        scheduleStatusHide(sourceId, HIDE_DELAY_ERROR);
                     }
                 })
                 .catch(function (err) {
@@ -984,6 +1015,7 @@
                     if (jobStates[sourceId]) jobStates[sourceId].polling = false;
                     setStatusHtml(sourceId,
                         '<span class="status err">&#x274C; Loi ket noi khi bat dau cap nhat</span>', 'err');
+                    scheduleStatusHide(sourceId, HIDE_DELAY_ERROR);
                 });
         });
     })();

@@ -183,14 +183,16 @@ public class RssCollectionService {
         this.scheduler.scheduleAtFixedRate(() -> flushPendingQueue(false), 5, 5, TimeUnit.SECONDS);
     }
 
-    /** Kết quả thu từ một nguồn feed: số bài tìm thấy và số bài chèn mới. */
+    /** Ket qua thu tu mot nguon feed: tim thay, chen moi, va cac ngay phat hanh bi anh huong. */
     private static final class FeedResult {
         final int found;
         final int inserted;
+        final java.util.Set<LocalDate> affectedDates;
 
-        FeedResult(int found, int inserted) {
+        FeedResult(int found, int inserted, java.util.Set<LocalDate> affectedDates) {
             this.found = found;
             this.inserted = inserted;
+            this.affectedDates = affectedDates;
         }
     }
 
@@ -216,8 +218,9 @@ public class RssCollectionService {
                 collectionLogRepository.insert(src.getId(), src.getName(), startedAt, finishedAt, feed.found, feed.inserted,
                         "RSS", "OK", null);
                 // Hết tin của nguồn này → commit/saveAll phần còn lại.
+                // Het tin cua nguon nay -> commit phan con lai roi cap nhat thong ke cho cac ngay bi anh huong.
                 flushPendingQueueNow();
-                saveDailyStatistics(today, src.getId());
+                saveDailyStatisticsForDates(feed.affectedDates, today, src.getId());
             } catch (Exception e) {
                 LocalDateTime finishedAt = now();
                 results.add(new SourceResult(src.getName(), 0, 0, e.getMessage()));
@@ -244,8 +247,8 @@ public class RssCollectionService {
         if (src.getFeedUrl() == null || src.getFeedUrl().isBlank()) {
             collectionLogRepository.insert(src.getId(), src.getName(), startedAt, now(), 0, 0,
                     "RSS", "Không có FeedUrl", null);
-            saveDailyStatistics(today, src.getId());
             flushPendingQueueNow();
+            saveDailyStatistics(today, src.getId());
             return new SourceResult(src.getName(), 0, 0, "Không có FeedUrl");
         }
         try {
@@ -253,16 +256,16 @@ public class RssCollectionService {
             LocalDateTime finishedAt = now();
             collectionLogRepository.insert(src.getId(), src.getName(), startedAt, finishedAt, feed.found, feed.inserted,
                     "RSS", "OK", null);
-            saveDailyStatistics(today, src.getId());
-            // Xử lý xong hết bài của source này → commit ngay tất cả phần dư trong hàng đợi vào DB.
+            // Xu ly xong het bai cua nguon nay -> commit phan con lai roi cap nhat thong ke cho cac ngay bi anh huong.
             flushPendingQueueNow();
+            saveDailyStatisticsForDates(feed.affectedDates, today, src.getId());
             return new SourceResult(src.getName(), feed.found, feed.inserted, "OK");
         } catch (Exception e) {
             LocalDateTime finishedAt = now();
             collectionLogRepository.insert(src.getId(), src.getName(), startedAt, finishedAt, 0, 0,
                     "RSS", null, CollectionLogRepository.sanitize(e.getMessage()));
-            saveDailyStatistics(today, src.getId());
             flushPendingQueueNow();
+            saveDailyStatistics(today, src.getId());
             return new SourceResult(src.getName(), 0, 0, e.getMessage());
         }
     }
@@ -273,6 +276,9 @@ public class RssCollectionService {
 
     /** Tinh toan va luu thong ke ngay cua 1 nguon vao DailyStatistics (tong + tung chuyen muc cua nguon do). */
     private void saveDailyStatistics(LocalDate date, Integer sourceId) {
+        // Ghi lai toan bo thong ke cua nguon trong ngay de tranh ban ghi trung lap/cu do constraint UNIQUE voi NULL.
+        dailyStatisticsRepository.deleteByDateAndSource(date, sourceId);
+
         int total = articleRepository.countByDateAndSource(date, sourceId);
         Double avg = articleRepository.avgPopularityByDateAndSource(date, sourceId);
         dailyStatisticsRepository.upsert(date, null, sourceId, total, avg == null ? 0.0 : avg);
@@ -282,6 +288,20 @@ public class RssCollectionService {
             int cnt = articleRepository.countByDateAndCategoryAndSource(date, catId, sourceId);
             Double a = articleRepository.avgPopularityByDateAndCategoryAndSource(date, catId, sourceId);
             dailyStatisticsRepository.upsert(date, catId, sourceId, cnt, a == null ? 0.0 : a);
+        }
+    }
+
+    /** Luu thong ke cho tat ca ngay bi anh huong boi lan thu thap (luon bao gom ngay hom nay). */
+    private void saveDailyStatisticsForDates(java.util.Set<LocalDate> affectedDates, LocalDate today, Integer sourceId) {
+        java.util.Set<LocalDate> dates = new java.util.HashSet<>();
+        if (affectedDates != null) {
+            dates.addAll(affectedDates);
+        }
+        if (today != null) {
+            dates.add(today);
+        }
+        for (LocalDate d : dates) {
+            saveDailyStatistics(d, sourceId);
         }
     }
 
@@ -297,7 +317,7 @@ public class RssCollectionService {
             log.info("[RSS] " + sourceName + ": tìm thấy " + itemCount + " bài trong feed");
             if (itemCount == 0) {
                 log.info("[RSS] " + sourceName + ": feed trống hoặc không có thẻ <item>, không có bài nào để chèn.");
-                return new FeedResult(itemCount, 0);
+                return new FeedResult(itemCount, 0, java.util.Collections.emptySet());
             }
             int queued = 0;
             int skippedNoLink = 0;
@@ -305,6 +325,7 @@ public class RssCollectionService {
             // Xử lý từng bài, set đầy đủ trường vào model rồi đưa vào pendingQueue chung.
 
             int skippedExisting = 0;
+            java.util.Set<LocalDate> affectedDates = new java.util.HashSet<>();
 
             for (int i = 0; i < items.getLength(); i++) {
                 Node item = items.item(i);
@@ -332,6 +353,9 @@ public class RssCollectionService {
                 String content = (contentEncoded != null && !contentEncoded.isBlank()) ? contentEncoded : desc;
 
                 LocalDateTime publishedAt = parseDate(pubDateStr).toLocalDateTime();
+                if (publishedAt != null) {
+                    affectedDates.add(publishedAt.toLocalDate());
+                }
 
                 log.info("[RSS] Đang xử lý: title=" + title + ", link=" + link + ", publishedAt=" + publishedAt);
 
@@ -398,7 +422,7 @@ public class RssCollectionService {
                     + ", mới (sẽ chèn) " + queued
                     + ", bỏ qua đã có = " + skippedExisting
                     + ", bỏ qua không có link = " + skippedNoLink);
-            return new FeedResult(itemCount, queued);
+            return new FeedResult(itemCount, queued, affectedDates);
     }
 
     /**

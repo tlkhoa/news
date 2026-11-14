@@ -24,13 +24,28 @@ public class DailyStatisticsRepository {
     /** Chen moi hoac cap nhat thong ke mot ngay / chuyen muc / nguon. */
     public void upsert(LocalDate date, Integer categoryId, Integer sourceId, int articleCount,
             double averagePopularity) {
-        String sql =
-                "INSERT INTO \"DailyStatistics\" (\"Date\", \"CategoryId\", \"SourceId\", \"ArticleCount\", \"AveragePopularity\")\n" +
-                "VALUES (?, ?, ?, ?, ?)\n" +
-                "ON CONFLICT (\"Date\", \"CategoryId\", \"SourceId\") DO UPDATE\n" +
-                "SET \"ArticleCount\" = EXCLUDED.\"ArticleCount\",\n" +
-                "    \"AveragePopularity\" = EXCLUDED.\"AveragePopularity\"";
-        jdbc.update(sql, java.sql.Date.valueOf(date), categoryId, sourceId, articleCount, averagePopularity);
+        // Postgres UNIQUE voi cot NULL co the khong conflict theo cach mong muon (tru khi NULLS NOT DISTINCT),
+        // nen dung UPDATE theo IS NOT DISTINCT FROM + INSERT neu chua co de dam bao dung.
+        String updateSql =
+                "UPDATE \"DailyStatistics\"\n" +
+                "SET \"ArticleCount\" = ?, \"AveragePopularity\" = ?\n" +
+                "WHERE \"Date\" = ?\n" +
+                "  AND \"CategoryId\" IS NOT DISTINCT FROM ?\n" +
+                "  AND \"SourceId\" IS NOT DISTINCT FROM ?";
+        int updated = jdbc.update(updateSql, articleCount, averagePopularity,
+                java.sql.Date.valueOf(date), categoryId, sourceId);
+        if (updated == 0) {
+            String insertSql =
+                    "INSERT INTO \"DailyStatistics\" (\"Date\", \"CategoryId\", \"SourceId\", \"ArticleCount\", \"AveragePopularity\")\n" +
+                    "VALUES (?, ?, ?, ?, ?)";
+            jdbc.update(insertSql, java.sql.Date.valueOf(date), categoryId, sourceId, articleCount, averagePopularity);
+        }
+    }
+
+    /** Xoa thong ke cua mot ngay theo nguon (de ghi lai tap hop moi, tranh ban ghi trung lap). */
+    public int deleteByDateAndSource(LocalDate date, Integer sourceId) {
+        String sql = "DELETE FROM \"DailyStatistics\" WHERE \"Date\" = ? AND \"SourceId\" IS NOT DISTINCT FROM ?";
+        return jdbc.update(sql, java.sql.Date.valueOf(date), sourceId);
     }
 
     /** Lay tat ca thong ke cua mot ngay (bao gom hang tong chung CategoryId = NULL, SourceId = NULL). */
