@@ -58,6 +58,11 @@ public class ArticleContentExtractor {
         DROP_CLASSES.add("related");
         DROP_CLASSES.add("google-news");
         DROP_CLASSES.add("newsletter");
+        // RFI và một số trang dùng interstitial/quảng cáo tự quảng bá dạng block
+        DROP_CLASSES.add("m-interstitial");
+        DROP_CLASSES.add("m-block-ad");
+        DROP_CLASSES.add("o-self-promo");
+        DROP_CLASSES.add("self-promo");
     }
 
     private static final String[] CONTENT_SELECTORS = {
@@ -69,6 +74,8 @@ public class ArticleContentExtractor {
         "div[itemprop=articleBody]",
         "div.content-detail", "article.article-content",
         "div.article-content", "div.the-content",
+        // RFI (rfi.fr): thân bài thường nằm trong module article-body / t-content__body
+        "[data-module=article-body]", "div.t-content__body", "article .t-content__body",
         "article"
     };
 
